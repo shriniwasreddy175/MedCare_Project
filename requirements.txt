@@ -1,0 +1,17 @@
+flask
+flask-cors
+flask-restful
+sqlalchemy
+pymysql
+psycopg2
+requests
+pandas
+numpy
+flask-jwt-extended
+itsdangerous
+bcrypt
+paho-mqtt
+python-dotenv
+gunicorn
+matplotlib
+seaborn

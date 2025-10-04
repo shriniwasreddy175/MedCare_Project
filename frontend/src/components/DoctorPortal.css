@@ -1,0 +1,275 @@
+/* DoctorPortal.css */
+
+/* Doctor Portal styles */
+.doctor-portal-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.portal-title {
+  text-align: center;
+  color: #4CAF50;
+}
+
+.portal-subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+/* New Portal Tabbed Navigation */
+.portal-tab-container {
+  display: flex;
+  justify-content: center;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+.portal-tab-button {
+  flex-grow: 1;
+  padding: 12px;
+  background-color: transparent;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: #4a5568;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.portal-tab-button.active {
+  color: #4CAF50;
+  border-bottom: 2px solid #4CAF50;
+}
+
+.portal-tab-button:hover {
+  border-bottom: 2px solid #4CAF50;
+}
+
+.portal-layout {
+  display: flex;
+  gap: 24px;
+}
+
+.patient-list-panel {
+  width: 300px;
+  flex-shrink: 0;
+  background-color: #f7fafc;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.patient-data-panel {
+  flex-grow: 1;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.panel-title {
+  font-size: 22px;
+  font-weight: bold;
+  color: #2d3748;
+  margin-bottom: 16px;
+}
+
+.patient-list {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+.patient-item {
+  padding: 16px;
+  margin-bottom: 8px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-left: 5px solid transparent;
+}
+
+.patient-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.patient-item.selected {
+  border-left: 5px solid #4CAF50;
+  background-color: #e8f5e9;
+}
+
+/* New Status-based styling for patient list */
+.patient-item.status-stable {
+  border-left: 5px solid #4CAF50; /* Green */
+}
+
+.patient-item.status-monitoring {
+  border-left: 5px solid #ffc107; /* Amber */
+}
+
+.patient-item.status-new-vitals {
+  border-left: 5px solid #03a9f4; /* Blue */
+}
+
+.patient-item.status-alert {
+  border-left: 5px solid #ef4444; /* Red */
+}
+
+.patient-info {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.patient-name {
+  color: #2d3748;
+}
+
+.patient-status {
+  font-size: 14px;
+  font-weight: normal;
+  color: #4a5568;
+}
+
+.last-visit {
+  font-size: 12px;
+  color: #718096;
+}
+
+.select-patient-message {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #718096;
+  font-style: italic;
+}
+
+.data-section-title {
+  font-size: 18px;
+  font-weight: bold;
+  color: #2d3748;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 8px;
+}
+
+.consultation-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.consultation-entry {
+  padding: 12px;
+  background-color: #f7fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.consultation-date {
+  font-weight: bold;
+  color: #4a5568;
+  margin: 0 0 4px 0;
+}
+
+.consultation-message {
+  margin: 0;
+  color: #718096;
+}
+
+.patient-not-found {
+  text-align: center;
+  color: #ef4444;
+  font-weight: bold;
+  margin-top: 20px;
+}
+
+/* Doctor Chat Styles */
+.doctor-chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 80vh;
+  padding: 20px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chat-title {
+  text-align: center;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.chat-subtitle {
+  text-align: center;
+  color: #718096;
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+
+.chat-window {
+  flex-grow: 1;
+  overflow-y: auto;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-message {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 18px;
+  line-height: 1.4;
+}
+
+.chat-message.bot {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  align-self: flex-start;
+}
+
+.chat-input-area {
+  display: flex;
+  margin-top: 16px;
+}
+
+.chat-input {
+  flex-grow: 1;
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  outline: none;
+  font-family: inherit;
+}
+
+.chat-send-button {
+  margin-left: 10px;
+  padding: 12px 24px;
+  background-color: #4CAF50;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.chat-send-button:hover {
+  background-color: #388e3c;
+}

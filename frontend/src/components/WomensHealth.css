@@ -1,0 +1,226 @@
+/* WomensHealth.css */
+
+/* Women's Health container */
+.womens-health-container {
+  max-width: 900px;
+  margin: 20px auto;
+  padding: 24px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.womens-health-title {
+  text-align: center;
+  color: #E91E63;
+}
+
+.womens-health-subtitle {
+  text-align: center;
+  color: #6b7280;
+  margin-bottom: 24px;
+}
+
+.health-section {
+  margin-bottom: 32px;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: bold;
+  color: #4a5568;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 8px;
+  margin-bottom: 16px;
+}
+
+.cycle-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  text-align: center;
+}
+
+.calendar-day {
+  padding: 10px;
+  border-radius: 8px;
+  background-color: #f7fafc;
+  color: #4a5568;
+  border: 1px solid #e2e8f0;
+  position: relative;
+  font-weight: bold;
+}
+
+.calendar-day.today {
+  border: 2px solid #1976D2;
+  box-shadow: 0 0 5px rgba(25, 118, 210, 0.5);
+}
+
+.calendar-day.period {
+  background-color: #ffebee;
+  border-color: #e91e63;
+  color: #c2185b;
+}
+
+.calendar-day.ovulation {
+  background-color: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+}
+
+.calendar-day.fertile-window {
+  background-color: #e1f5fe;
+  border-color: #03a9f4;
+  color: #01579b;
+}
+
+.legend-container {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 16px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #718096;
+}
+
+.legend-box {
+  width: 15px;
+  height: 15px;
+  border-radius: 3px;
+}
+
+.legend-box.period { background-color: #e91e63; }
+.legend-box.ovulation { background-color: #4caf50; }
+.legend-box.pms { background-color: #ffc107; }
+.legend-box.fertile-window { background-color: #03a9f4; }
+
+.symptom-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.symptom-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  resize: vertical;
+  min-height: 80px;
+}
+
+.symptom-button {
+  padding: 12px 24px;
+  background-color: #E91E63;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.symptom-button:hover {
+  background-color: #c2185b;
+}
+
+.log-message {
+  text-align: center;
+  font-style: italic;
+  color: #4a5568;
+}
+
+/* Tabbed interface */
+.tab-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e2e8f0;
+}
+
+.tab-button {
+  flex-grow: 1;
+  padding: 12px;
+  background-color: transparent;
+  border: none;
+  font-weight: bold;
+  cursor: pointer;
+  color: #4a5568;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.3s;
+}
+
+.tab-button.active {
+  color: #E91E63;
+  border-bottom: 2px solid #E91E63;
+}
+
+.tab-button:hover {
+  border-bottom: 2px solid #E91E63;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: bold;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+
+.date-input {
+  padding: 8px;
+  border: 1px solid #cbd5e0;
+  border-radius: 4px;
+  font-family: inherit;
+}
+
+/* Insights */
+.cycle-insights,
+.pregnancy-insights {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #fff3e0;
+  border-left: 4px solid #ff9800;
+  border-radius: 4px;
+  color: #e65100;
+  line-height: 1.5;
+}
+
+.hormone-insight {
+  font-weight: bold;
+}
+
+.advanced-insight-button {
+  background-color: #E91E63;
+  color: #fff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  width: 100%;
+}
+
+.advanced-insight-button:hover {
+  background-color: #c2185b;
+}
+
+.insight-response {
+  margin-top: 16px;
+  padding: 16px;
+  background-color: #f7fafc;
+  border-left: 4px solid #1976D2;
+  border-radius: 4px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}

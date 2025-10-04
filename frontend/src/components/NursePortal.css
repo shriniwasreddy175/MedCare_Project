@@ -1,0 +1,293 @@
+/* Nurse Portal Styles */
+
+/* --- Base Layout & Fonts --- */
+body {
+    background-color: #f0f4f8; /* A very light blue-gray for the body */
+    font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+    color: #1a202c; /* A dark gray for text */
+}
+
+.nurse-dashboard-container {
+    display: flex;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+.nurse-sidebar {
+    width: 260px;
+    background-color: #ffffff;
+    padding: 24px;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: 2px 0 10px rgba(0, 0, 0, 0.03);
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.nurse-main-content {
+    flex-grow: 1;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* --- Sidebar Components --- */
+.logo-section {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+}
+
+.logo-icon-bg {
+    background-color: #e6fffa; /* Light cyan */
+    padding: 10px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-icon {
+    color: #00b39e;
+    width: 28px;
+    height: 28px;
+}
+
+.logo-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.logo-subtitle {
+    font-size: 14px;
+    color: #718096;
+}
+
+.nurse-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-grow: 1;
+}
+
+.nurse-nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-radius: 8px;
+    color: #4a5568;
+    font-weight: 500;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    border: none;
+    background-color: transparent;
+}
+
+.nurse-nav-item:hover, .nurse-nav-item.active {
+    background-color: #edf2f7;
+    color: #2d3748;
+    transform: translateX(3px);
+}
+
+.nurse-nav-item.active {
+    background-color: #e6fffa;
+    border-left: 3px solid #00b39e;
+    padding-left: 13px;
+    font-weight: 600;
+    color: #00b39e;
+}
+
+/* --- Badges & Buttons --- */
+.badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 9999px;
+}
+
+.badge-red {
+    background-color: #ffe6e6;
+    color: #e53e3e;
+}
+
+.badge-orange {
+    background-color: #fffaf0;
+    color: #f6ad55;
+}
+
+.badge-green {
+    background-color: #f0fff4;
+    color: #48bb78;
+}
+
+.button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: background-color 0.2s;
+}
+
+.button-primary {
+    background-color: #00b39e;
+    color: #fff;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.button-primary:hover {
+    background-color: #009688;
+    box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* --- Main Content Sections --- */
+.main-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    background-color: #fff;
+    padding: 20px 32px;
+    margin: -32px -32px 24px -32px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.main-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #2d3748;
+}
+
+.main-subtitle {
+    font-size: 14px;
+    color: #718096;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.stat-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+}
+
+.stat-card-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #718096;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.stat-value-red { color: #e53e3e; }
+.stat-value-orange { color: #f6ad55; }
+.stat-value-green { color: #48bb78; }
+.stat-icon { font-size: 40px; }
+
+/* --- Patient List & Cards --- */
+.patient-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.patient-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    padding: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.patient-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.patient-card.alert-card {
+    border-left: 4px solid #e53e3e;
+}
+
+.patient-info-section {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.patient-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: #cbd5e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    color: #4a5568;
+}
+
+.patient-name {
+    font-size: 20px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.patient-meta {
+    font-size: 14px;
+    color: #718096;
+}
+
+.patient-vitals-section {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.vital-item {
+    text-align: center;
+}
+
+.vital-value {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2d3748;
+}
+
+.vital-label {
+    font-size: 12px;
+    color: #718096;
+}

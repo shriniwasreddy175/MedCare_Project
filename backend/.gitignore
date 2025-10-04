@@ -1,0 +1,20 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+env/
+venv/
+
+# Node / React (if frontend exists)
+node_modules/
+build/
+dist/
+
+# Credentials / keys
+*.env
+apikeys.json
+
+# OS files
+.DS_Store
+Thumbs.db
