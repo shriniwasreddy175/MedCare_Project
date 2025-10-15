@@ -2,6 +2,7 @@ import React from 'react';
 import VitalsDashboard from './VitalsDashboard'; // Reuse the vitals dashboard component
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import './DoctorPatientData.css'; // Dedicated CSS for this component
 import '../App.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);

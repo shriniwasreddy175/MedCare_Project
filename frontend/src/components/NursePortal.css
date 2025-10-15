@@ -1,10 +1,14 @@
-/* Nurse Portal Styles */
+/* NursePortal.css - Clean, Efficient, and Responsive Styles */
 
-/* --- Base Layout & Fonts --- */
+/* |--------------------------------------------------------------------------
+| 1. BASE LAYOUT & GLOBAL THEME
+|--------------------------------------------------------------------------
+*/
+/* Note: The 'body' styles should ideally be in App.css, but are kept here for completeness */
 body {
-    background-color: #f0f4f8; /* A very light blue-gray for the body */
+    background-color: #f0f4f8; 
     font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
-    color: #1a202c; /* A dark gray for text */
+    color: #1a202c; 
 }
 
 .nurse-dashboard-container {
@@ -32,8 +36,10 @@ body {
     display: flex;
     flex-direction: column;
 }
-
-/* --- Sidebar Components --- */
+/* |--------------------------------------------------------------------------
+| 2. SIDEBAR AND NAVIGATION
+|--------------------------------------------------------------------------
+*/
 .logo-section {
     display: flex;
     align-items: center;
@@ -102,7 +108,50 @@ body {
     color: #00b39e;
 }
 
-/* --- Badges & Buttons --- */
+.nurse-profile-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.profile-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.profile-avatar-bg {
+    width: 40px;
+    height: 40px;
+    border-radius: 9999px;
+    background-color: #e5f5f5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-avatar-text {
+    font-weight: bold;
+    color: #0d9488;
+}
+
+.profile-name {
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.profile-role {
+    font-size: 12px;
+    color: #6b7280;
+}
+
+/* |--------------------------------------------------------------------------
+| 3. BADGES AND GENERIC BUTTONS
+|--------------------------------------------------------------------------
+*/
 .badge {
     font-size: 12px;
     font-weight: 600;
@@ -110,20 +159,12 @@ body {
     border-radius: 9999px;
 }
 
-.badge-red {
-    background-color: #ffe6e6;
-    color: #e53e3e;
-}
-
-.badge-orange {
-    background-color: #fffaf0;
-    color: #f6ad55;
-}
-
-.badge-green {
-    background-color: #f0fff4;
-    color: #48bb78;
-}
+.badge-red { background-color: #ffe6e6; color: #e53e3e; }
+.badge-orange { background-color: #fffaf0; color: #f6ad55; }
+.badge-green { background-color: #f0fff4; color: #48bb78; }
+.badge-teal { background-color: #99f6e4; color: #0d9488; }
+.badge-pink { background-color: #fce7f3; color: #db2777; }
+.badge-outline { background-color: transparent; border: 1px solid #d1d5db; color: #6b7280; }
 
 .button {
     display: flex;
@@ -143,13 +184,104 @@ body {
     color: #fff;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
-
 .button-primary:hover {
     background-color: #009688;
     box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
 }
 
-/* --- Main Content Sections --- */
+.button-outline {
+    background-color: transparent;
+    color: #1f2937;
+    border: 1px solid #e5e7eb;
+}
+.button-outline:hover {
+    background-color: #f3f4f6;
+}
+
+.button-ghost {
+    background-color: transparent;
+    color: #6b7280;
+    padding: 8px;
+}
+.button-ghost:hover {
+    background-color: #f3f4f6;
+}
+
+/* --- Action Button Overrides (SOS and Send - Consolidated) --- */
+.sos-button {
+    background-color: #ef4444; /* Red */
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.sos-button:hover {
+    background-color: #dc2626;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+.sos-button:active {
+    transform: translateY(0);
+}
+
+.send-button {
+    background-color: #1976D2; /* Blue */
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: background-color 0.2s, transform 0.1s, box-shadow 0.1s;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.send-button:hover {
+    background-color: #1565C0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+.send-button:active {
+    background-color: #1565C0;
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.button-outline-sm {
+    padding: 6px 12px;
+    font-size: 14px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    background-color: transparent;
+    color: #4b5563;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+}
+
+.button-orange {
+    background-color: #f97316;
+    color: #fff;
+    padding: 6px 12px;
+    font-size: 14px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    border: none;
+}
+
+/* |--------------------------------------------------------------------------
+| 4. MAIN CONTENT HEADER & STATS
+|--------------------------------------------------------------------------
+*/
 .main-header {
     display: flex;
     justify-content: space-between;
@@ -157,7 +289,7 @@ body {
     margin-bottom: 24px;
     background-color: #fff;
     padding: 20px 32px;
-    margin: -32px -32px 24px -32px;
+    margin: -32px -32px 24px -32px; 
     border-bottom: 1px solid #e2e8f0;
 }
 
@@ -187,9 +319,7 @@ body {
     transition: transform 0.2s;
 }
 
-.stat-card:hover {
-    transform: translateY(-4px);
-}
+.stat-card:hover { transform: translateY(-4px); }
 
 .stat-card-content {
     display: flex;
@@ -197,23 +327,16 @@ body {
     align-items: center;
 }
 
-.stat-label {
-    font-size: 14px;
-    font-weight: 500;
-    color: #718096;
-}
-
-.stat-value {
-    font-size: 32px;
-    font-weight: 700;
-}
-
+.stat-label { font-size: 14px; font-weight: 500; color: #718096; }
+.stat-value { font-size: 32px; font-weight: 700; }
 .stat-value-red { color: #e53e3e; }
 .stat-value-orange { color: #f6ad55; }
 .stat-value-green { color: #48bb78; }
-.stat-icon { font-size: 40px; }
 
-/* --- Patient List & Cards --- */
+/* |--------------------------------------------------------------------------
+| 5. PATIENT CARDS & VITALS
+|--------------------------------------------------------------------------
+*/
 .patient-list-container {
     display: flex;
     flex-direction: column;
@@ -260,16 +383,8 @@ body {
     color: #4a5568;
 }
 
-.patient-name {
-    font-size: 20px;
-    font-weight: 600;
-    color: #2d3748;
-}
-
-.patient-meta {
-    font-size: 14px;
-    color: #718096;
-}
+.patient-name { font-size: 20px; font-weight: 600; color: #2d3748; }
+.patient-meta { font-size: 14px; color: #718096; }
 
 .patient-vitals-section {
     display: flex;
@@ -277,17 +392,198 @@ body {
     gap: 24px;
 }
 
-.vital-item {
-    text-align: center;
+.vital-item { text-align: center; }
+.vital-value { font-size: 18px; font-weight: 600; color: #2d3748; }
+.vital-label { font-size: 12px; color: #718096; }
+
+.patient-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
-.vital-value {
+/* |--------------------------------------------------------------------------
+| 6. RESPONSIVE DESIGN
+|--------------------------------------------------------------------------
+*/
+@media (max-width: 1024px) {
+    .nurse-sidebar {
+        width: 220px;
+        padding: 20px;
+    }
+
+    .nurse-main-content { padding: 24px; }
+
+    .main-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+}
+
+@media (max-width: 768px) {
+    .nurse-dashboard-container { flex-direction: column; }
+
+    .nurse-sidebar {
+        width: 100%;
+        height: auto;
+        position: relative;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+        box-shadow: none;
+    }
+
+    .nurse-main-content { padding: 16px; }
+    .stats-grid { grid-template-columns: 1fr; }
+
+    .patient-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 16px;
+    }
+
+    .patient-vitals-section {
+        flex-wrap: wrap;
+        gap: 16px;
+    }
+    
+    .patient-actions {
+        width: 100%;
+        justify-content: space-around;
+    }
+}
+
+@media (max-width: 480px) {
+    .logo-title { font-size: 18px; }
+    .main-title { font-size: 24px; }
+    .stat-value { font-size: 28px; }
+    .patient-name { font-size: 18px; }
+
+    .patient-avatar {
+        width: 40px;
+        height: 40px;
+        font-size: 20px;
+    }
+}
+
+/* --- Additions and Modifications to NursePortal.css --- */
+/* 1. Modal Fixes (Required for staying in bounds) */
+.dialog-overlay {
+    position: fixed; /* Crucial: Fixes it to the viewport */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay for focus */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000; /* Ensures it sits above all other elements */
+    overflow-y: auto; /* Allows scrolling inside the modal if content is long */
+}
+
+.dialog-content {
+    /* Set a max-width and max-height for very long forms/guides */
+    max-width: 500px; 
+    max-height: 90vh; /* Limits height to viewport size */
+    overflow-y: auto; /* Allows content within the modal to scroll */
+    background-color: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+    /* margin: 20px auto; (Remove if present, 'fixed' positioning handles this) */
+}
+/* 2. Patient List Restructure (The old .patient-card is now the wrapper for the two states) */
+.patient-list-row {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    padding: 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.patient-list-row:hover {
+    background-color: #f7fafc;
+    border-color: #e2e8f0;
+}
+
+.patient-list-row.alert-row {
+    border-left: 4px solid #e53e3e;
+}
+
+.patient-list-row.expanded {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.patient-info-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.patient-name-list {
     font-size: 18px;
     font-weight: 600;
     color: #2d3748;
+    margin: 0;
 }
 
-.vital-label {
-    font-size: 12px;
+.patient-meta-list {
+    font-size: 14px;
     color: #718096;
+    margin: 0;
+}
+
+.patient-indicators {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.chevron {
+    transition: transform 0.2s;
+}
+
+.chevron.rotated {
+    transform: rotate(90deg); /* Rotate arrow when panel is open */
+}
+/* 3. Expanded Detail Panel (The hidden content) */
+.patient-detail-panel {
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-top: none;
+    border-bottom-left-radius: 12px;
+    border-bottom-right-radius: 12px;
+    padding: 24px;
+    margin-top: -20px; /* Adjust to visually connect with the row above */
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+}
+
+.expanded-vitals {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 16px;
+}
+
+.expanded-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }
