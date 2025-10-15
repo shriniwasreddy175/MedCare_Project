@@ -226,6 +226,73 @@ def register():
 
     return jsonify({"message": f"Registration successful for {username} as {role}!"}), 200
 
+@app.route('/api/vitals/manual', methods=['POST'])
+def manual_vitals_entry():
+    """
+    Receives manual vital sign data from the Nurse Portal, saves it to the VitalsRecord table,
+    and logs the observation/alert status.
+    """
+    data = request.json
+    
+    patient_name = data.get('patient_name')
+    notes = data.get('notes')
+    
+    # 1. Input Validation: Check if required data is present
+    if not patient_name or not data.get('heart_rate'):
+        return jsonify({"message": "Missing patient name or vital data."}), 400
+
+    # 2. Find the Patient ID based on name
+    patient = Patient.query.filter_by(name=patient_name).first()
+    if not patient:
+        return jsonify({"message": f"Patient '{patient_name}' not found in the database. Cannot save record."}), 404
+
+    # 3. Create the new Vitals Record object
+    new_vitals = VitalsRecord(
+        patient_id=patient.id,
+        heart_rate=data.get('heart_rate'),
+        blood_pressure=data.get('blood_pressure'),
+        spo2=data.get('spo2'),
+        temperature=data.get('temperature'),
+        # ECG, Cortisol, etc., can be left as NULL or calculated later
+    )
+    
+    # 4. Check for alerts based on the new data
+    # Create a mock object to match the structure expected by check_for_alerts
+    vitals_obj = VitalsMock(
+        heart_rate=new_vitals.heart_rate,
+        blood_pressure=new_vitals.blood_pressure,
+        spo2=new_vitals.spo2,
+        temperature=new_vitals.temperature,
+        ecg_status="N/A" # Default for manual entry
+    )
+    alert_message = check_for_alerts(vitals_obj)
+
+    # 5. Save Vitals Record and a Consultation note (if notes were provided or an alert was raised)
+    try:
+        db.session.add(new_vitals)
+        
+        # Log a consultation entry for the record, including any notes or alerts
+        if notes or "ALERT" in alert_message or "WARNING" in alert_message:
+            consultation_note = Consultation(
+                patient_id=patient.id,
+                doctor_name="System/Nurse Entry", 
+                notes=f"MANUAL VITAL ENTRY: {new_vitals.heart_rate}, {new_vitals.blood_pressure}, etc. OBSERVATION: {notes or 'None'}. SYSTEM STATUS: {alert_message}",
+                alert_level='nurse' if "ALERT" in alert_message else 'none',
+                escalated_by=data.get('nurse_id', 'Nurse System') # Assuming nurse ID is passed in POST data
+            )
+            db.session.add(consultation_note)
+            
+        db.session.commit()
+        return jsonify({
+            "message": f"Vitals saved successfully for {patient_name}. System analysis: {alert_message}",
+            "alert": "ALERT" in alert_message or "WARNING" in alert_message
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database error during manual entry: {e}")
+        return jsonify({"message": "Server error while saving data."}), 500
+
 @app.route('/api/vitals', methods=['GET'])
 def get_vitals():
     """Returns the latest vitals for a patient (mocked for ANY patient now)."""

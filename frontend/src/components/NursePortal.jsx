@@ -16,7 +16,18 @@ export default function NursePortal({ onLogout }) {
   const [alertPatients, setAlertPatients] = useState([]);
   const [filteredPatients, setFilteredPatients] = useState([]);
   const [totalPatients, setTotalPatients] = useState(0);
-  const [selectedPatientId, setSelectedPatientId] = useState(null); // NEW: State to track expanded patient
+  const [selectedPatientId, setSelectedPatientId] = useState(null); 
+    
+  // NEW STATE: Form data and status message for manual entry
+    const [manualFormData, setManualFormData] = useState({
+        patient_name: '',
+        heart_rate: '',
+        blood_pressure: '',
+        spo2: '',
+        temperature: '',
+        notes: '',
+    });
+    const [entryStatus, setEntryStatus] = useState('');
 
   // Fetch patient data from the backend
   const fetchPatients = useCallback(async () => {
@@ -67,6 +78,61 @@ export default function NursePortal({ onLogout }) {
   const togglePatientDetail = (patientId) => {
     setSelectedPatientId(selectedPatientId === patientId ? null : patientId);
   };
+
+    // Handler for form input changes
+    const handleFormChange = (e) => {
+        const { name, value } = e.target;
+        setManualFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    // Handler for submitting the form to the API
+    const handleSaveEntry = async (e) => {
+        e.preventDefault();
+        setEntryStatus('Saving data...');
+
+        // Basic validation
+        if (!manualFormData.patient_name || !manualFormData.heart_rate) {
+            setEntryStatus('Error: Patient Name and Heart Rate are required.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/vitals/manual`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ...manualFormData,
+                    nurse_id: 'Nurse John' // Assuming nurse ID is passed in POST data
+                }),
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                // Handle 404 (Patient not found) or 500 errors
+                setEntryStatus(`Error: ${data.message || 'Failed to save data. Check backend console.'}`);
+                return;
+            }
+
+            // Success or Alert notification from the backend
+            setEntryStatus(data.message);
+            
+            // Clear form and refresh data
+            setTimeout(() => {
+                setManualEntryOpen(false);
+                setManualFormData({
+                    patient_name: '', heart_rate: '', blood_pressure: '', spo2: '', temperature: '', notes: '',
+                });
+                setEntryStatus('');
+                fetchPatients(); // Refresh the patient list/stats to show new data
+            }, 2500);
+
+        } catch (error) {
+            console.error("Manual entry submit error:", error);
+            setEntryStatus('Network error: Could not reach the API server.');
+        }
+    };
+
 
   const sidebar = [
     { id: 'patients', label: 'My Patients', icon: Users, count: totalPatients },
@@ -218,76 +284,76 @@ export default function NursePortal({ onLogout }) {
       {/* Main Content */}
       <div className="nurse-main-content">
         {/* Header (Omitted for brevity) */}
-        <div className="main-header">
-            <div>
-              <h1 className="main-title">
-                {activeTab === 'patients' && 'Patient Monitoring'}
-                {activeTab === 'alerts' && 'Active Alerts'}
-                {activeTab === 'escalated' && 'Escalated Cases'}
-              </h1>
-              <p className="main-subtitle">
-                {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
-              </p>
-            </div>
-            <div className="stats-badge">
-              <div className="badge badge-teal">
-                {totalPatients} Patients Under Care
-              </div>
-            </div>
-        </div>
+        <div className="main-header">
+            <div>
+              <h1 className="main-title">
+                {activeTab === 'patients' && 'Patient Monitoring'}
+                {activeTab === 'alerts' && 'Active Alerts'}
+                {activeTab === 'escalated' && 'Escalated Cases'}
+              </h1>
+              <p className="main-subtitle">
+                {currentTime.toLocaleDateString()} • {currentTime.toLocaleTimeString()}
+              </p>
+            </div>
+            <div className="stats-badge">
+              <div className="badge badge-teal">
+                {totalPatients} Patients Under Care
+              </div>
+            </div>
+        </div>
 
         {/* Stats Cards (Omitted for brevity) */}
-        <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-card-content">
-                <div>
-                  <p className="stat-label">Total Patients</p>
-                  <p className="stat-value">{totalPatients}</p>
-                </div>
-                <Users className="stat-icon-teal" />
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-content">
-                <div>
-                  <p className="stat-label">New Alerts</p>
-                  <p className="stat-value-red">{criticalAlerts}</p>
-                </div>
-                <Bell className="stat-icon-red" />
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-content">
-                <div>
-                  <p className="stat-label">Escalated</p>
-                  <p className="stat-value-orange">{escalatedAlerts}</p>
-                </div>
-                <ArrowUp className="stat-icon-orange" />
-              </div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-card-content">
-                <div>
-                  <p className="stat-label">Stable</p>
-                  <p className="stat-value-green">{stablePatients}</p>
-                </div>
-                <TrendingUp className="stat-icon-green" />
-              </div>
-            </div>
-        </div>
+        <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-card-content">
+                <div>
+                  <p className="stat-label">Total Patients</p>
+                  <p className="stat-value">{totalPatients}</p>
+                </div>
+                <Users className="stat-icon-teal" />
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-content">
+                <div>
+                  <p className="stat-label">New Alerts</p>
+                  <p className="stat-value-red">{criticalAlerts}</p>
+                </div>
+                <Bell className="stat-icon-red" />
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-content">
+                <div>
+                  <p className="stat-label">Escalated</p>
+                  <p className="stat-value-orange">{escalatedAlerts}</p>
+                </div>
+                <ArrowUp className="stat-icon-orange" />
+              </div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-card-content">
+                <div>
+                  <p className="stat-label">Stable</p>
+                  <p className="stat-value-green">{stablePatients}</p>
+                </div>
+                <TrendingUp className="stat-icon-green" />
+              </div>
+            </div>
+        </div>
 
         {/* Search and Filters (Omitted for brevity) */}
-        <div className="search-container">
-            <div className="search-input-wrapper">
-              <Search className="search-icon" />
-              <input
-                placeholder="Search patients or locations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="search-input"
-              />
-            </div>
-        </div>
+        <div className="search-container">
+            <div className="search-input-wrapper">
+              <Search className="search-icon" />
+              <input
+                placeholder="Search patients or locations..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="search-input"
+              />
+            </div>
+        </div>
 
 
         {/* Patient List (RESTRUCTURED) */}
