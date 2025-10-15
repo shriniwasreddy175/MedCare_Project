@@ -28,11 +28,11 @@ migrate = Migrate(app, db)
 
 # Configure CORS
 # 2. NEW: Added the live Render frontend domain to allow cross-origin requests
-CORS(app, resources={r"/api/*": {"origins": [
-    "http://localhost:5173", 
-    "http://localhost:3000",
-    "https://medcare-api-i5cm.onrender.com" # E.g., https://medcare-frontend.onrender.com
-]}})
+#CORS(app, resources={r"/api/*": {"origins": [
+#    "http://localhost:3000",
+#    "https://medcare-api-i5cm.onrender.com" # E.g., https://medcare-frontend.onrender.com
+#]}})
+CORS(app, resources={r"/api/*": {"origins": "*"}})
 
 # --- Configure the Gemini API ---
 api_key = os.getenv("GEMINI_API_KEY")
