@@ -26,7 +26,7 @@ function App() {
   const [consultationMessage, setConsultationMessage] = useState("Fetching health status...");
   const [chatbotMessages, setChatbotMessages] = useState([]);
 
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'https://medcare-api-i5cm.onrender.com';
 
   const fetchVitals = useCallback(async () => {
     if (!isLoggedIn) return;

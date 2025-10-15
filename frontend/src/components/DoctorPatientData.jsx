@@ -6,7 +6,7 @@ import './DoctorPatientData.css'; // Dedicated styles for the detailed record vi
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://medcare-api-i5cm.onrender.com';
 
 // Mock historical data structure for chart visualization
 const MOCK_HISTORY = {

@@ -9,7 +9,7 @@ function LoginPage({ onLoginSuccess }) {
   const [loading, setLoading] = useState(false);
   const [isRegistering, setIsRegistering] = useState(false); // New state to toggle forms
 
-  const API_URL = 'http://localhost:5000/api'; 
+  const API_URL = 'https://medcare-api-i5cm.onrender.com'; 
 
   const handleLogin = async (e) => {
     e.preventDefault();
