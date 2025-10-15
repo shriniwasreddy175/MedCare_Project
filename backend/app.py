@@ -18,7 +18,7 @@ app = Flask(__name__)
 
 # --- Database Configuration ---
 # 1. NEW: Reads the PostgreSQL URI from Render environment variables
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL") 
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL","sqlite:///medcare.db") 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_please_change_me") 
 
