@@ -4,7 +4,7 @@ import {Users,Bell,ArrowUp,MapPin,LogOut,Shield,Heart,Activity,Droplets,Thermome
   Clock,TrendingUp,Plus,MessageCircle,Stethoscope,Baby,ChevronRight,Search} from 'lucide-react';
 
 const MOCK_NURSE_ID = 'nurse1';
-const API_URL = 'https://medcare-api-i5cm.onrender.com';
+const API_URL = 'https://medcare-api-i5cm.onrender.com/api';
 
 export default function NursePortal({ onLogout }) {
   const [activeTab, setActiveTab] = useState('patients');

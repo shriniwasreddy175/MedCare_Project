@@ -5,7 +5,7 @@ import DoctorPatientData from './DoctorPatientData';
 
 // REMOVED: MOCK_PATIENT_LIST_DOCTOR 
 
-const API_URL = 'https://medcare-api-i5cm.onrender.com';
+const API_URL = 'https://medcare-api-i5cm.onrender.com/api';
 
 export default function DoctorPortal({ onLogout }) {
     const [activeTab, setActiveTab] = useState('escalated');
