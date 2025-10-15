@@ -1,191 +1,175 @@
-import React from 'react';
-import VitalsDashboard from './VitalsDashboard'; // Reuse the vitals dashboard component
+import React, { useState, useEffect, useCallback } from 'react';
+import { ChevronLeft, FileText, Heart, Activity, Droplets, Thermometer, Calendar } from 'lucide-react';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import './DoctorPatientData.css'; // Dedicated CSS for this component
-import '../App.css';
+import './DoctorPatientData.css'; // Dedicated styles for the detailed record view
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
 
-// Mock data for a specific patient's data, now with historical trends
-const mockPatientData = {
-  'PATIENT-001': {
-    vitals: {
-      heartRate: "85 bpm",
-      bloodPressure: "135/85 mmHg",
-      spo2: "96%",
-      temperature: "36.8°C",
-      ecgStatus: "Irregular heartbeat detected",
-      cortisol: "22 mcg/dL",
-      estrogen: "45 pg/mL",
-      progesterone: "8 ng/mL",
-      testosterone: "75 ng/dL"
-    },
-    historicalVitals: {
-      dates: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      heartRate: [82, 85, 84, 86, 88, 85, 87],
-      bloodPressure: [
-        { systolic: 130, diastolic: 82 },
-        { systolic: 132, diastolic: 84 },
-        { systolic: 135, diastolic: 85 },
-        { systolic: 131, diastolic: 83 },
-        { systolic: 134, diastolic: 86 },
-        { systolic: 135, diastolic: 85 },
-        { systolic: 138, diastolic: 89 }
-      ]
-    },
-    consultationHistory: [
-      { date: '2025-05-15', message: 'Vitals show elevated blood pressure. Advised to monitor and limit sodium intake.' },
-      { date: '2025-05-10', message: 'Patient presented with mild symptoms of stress. Recommended meditation.' }
-    ]
-  },
-  'PATIENT-002': {
-    vitals: {
-      heartRate: "68 bpm",
-      bloodPressure: "115/75 mmHg",
-      spo2: "99%",
-      temperature: "36.2°C",
-      ecgStatus: "Normal Rhythm",
-      cortisol: "11 mcg/dL",
-      estrogen: "35 pg/mL",
-      progesterone: "6 ng/mL",
-      testosterone: "60 ng/dL"
-    },
-    historicalVitals: {
-      dates: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      heartRate: [70, 68, 69, 71, 67, 68, 70],
-      bloodPressure: [
-        { systolic: 118, diastolic: 78 },
-        { systolic: 115, diastolic: 75 },
-        { systolic: 116, diastolic: 76 },
-        { systolic: 117, diastolic: 77 },
-        { systolic: 114, diastolic: 74 },
-        { systolic: 115, diastolic: 75 },
-        { systolic: 118, diastolic: 78 }
-      ]
-    },
-    consultationHistory: [
-      { date: '2025-05-12', message: 'Regular check-up. Vitals stable. No issues detected.' },
-    ]
-  },
-  'PATIENT-003': {
-    vitals: {
-      heartRate: "72 bpm",
-      bloodPressure: "120/80 mmHg",
-      spo2: "98%",
-      temperature: "36.5°C",
-      ecgStatus: "Normal Rhythm",
-      cortisol: "15 mcg/dL",
-      estrogen: "30 pg/mL",
-      progesterone: "5 ng/mL",
-      testosterone: "50 ng/dL"
-    },
-    historicalVitals: {
-      dates: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-      heartRate: [74, 72, 75, 71, 73, 72, 74],
-      bloodPressure: [
-        { systolic: 121, diastolic: 81 },
-        { systolic: 120, diastolic: 80 },
-        { systolic: 123, diastolic: 82 },
-        { systolic: 119, diastolic: 79 },
-        { systolic: 122, diastolic: 81 },
-        { systolic: 120, diastolic: 80 },
-        { systolic: 121, diastolic: 82 }
-      ]
-    },
-    consultationHistory: [
-      { date: '2025-05-15', message: 'First check-in. Vitals are within normal range. No specific concerns.' },
-    ]
-  },
+const API_URL = 'http://localhost:5000/api';
+
+// Mock historical data structure for chart visualization
+const MOCK_HISTORY = {
+    dates: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    heartRate: [82, 85, 84, 86, 88, 85, 87],
+    systolic: [130, 132, 135, 131, 134, 135, 138],
+    diastolic: [82, 84, 85, 83, 86, 85, 89],
 };
 
-function DoctorPatientData({ patientId }) {
-  const patientData = mockPatientData[patientId];
-  const patientName = patientId === 'PATIENT-001' ? 'Alice Johnson' : patientId === 'PATIENT-002' ? 'Bob Williams' : 'Charlie Brown';
+const MOCK_CONSULTATIONS = [
+    { date: '2025-05-15', doctor: 'Dr. R. Smith', message: 'Vitals trending high. Advised reduced activity and low sodium diet. Follow-up scheduled.' },
+    { date: '2025-05-10', doctor: 'Dr. R. Smith', message: 'Patient check-in, reported mild fatigue. Vitals stable. Recommended vitamin supplements.' }
+];
 
-  if (!patientData) {
-    return <div className="patient-not-found">Patient data not found.</div>;
-  }
-  
-  // Chart data for Heart Rate
-  const heartRateChartData = {
-    labels: patientData.historicalVitals.dates,
-    datasets: [
-      {
-        label: 'Heart Rate (bpm)',
-        data: patientData.historicalVitals.heartRate,
-        borderColor: 'rgb(255, 99, 132)',
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-        tension: 0.4,
-      },
-    ],
-  };
+// Component for the comprehensive, detailed patient record
+export default function DoctorPatientData({ patientId, onBack }) {
+    const [patient, setPatient] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    
+    // NOTE: In a real application, MOCK_HISTORY and MOCK_CONSULTATIONS would be fetched from the API
 
-  // Chart data for Blood Pressure
-  const bloodPressureChartData = {
-    labels: patientData.historicalVitals.dates,
-    datasets: [
-      {
-        label: 'Systolic (mmHg)',
-        data: patientData.historicalVitals.bloodPressure.map(d => d.systolic),
-        borderColor: 'rgb(53, 162, 235)',
-        backgroundColor: 'rgba(53, 162, 235, 0.5)',
-        tension: 0.4,
-      },
-      {
-        label: 'Diastolic (mmHg)',
-        data: patientData.historicalVitals.bloodPressure.map(d => d.diastolic),
-        borderColor: 'rgb(75, 192, 192)',
-        backgroundColor: 'rgba(75, 192, 192, 0.5)',
-        tension: 0.4,
-      },
-    ],
-  };
+    const fetchPatientDetails = useCallback(async () => {
+        setIsLoading(true);
+        try {
+            // Placeholder: In a full implementation, this route would fetch all history and demographics
+            const response = await fetch(`${API_URL}/patients`); 
+            const patientList = await response.json();
+            const selectedPatient = patientList.find(p => p.id === patientId);
 
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { position: 'top' },
-      title: { display: true, text: 'Vital Trends Over Time' },
-    },
-  };
-  
-  return (
-    <div className="doctor-patient-data">
-      <h3 className="patient-name-title">Patient: {patientName}</h3>
-      
-      {/* Current Vitals Section (reusing the VitalsDashboard component) */}
-      <h4 className="data-section-title">Current Vitals</h4>
-      <VitalsDashboard
-        vitals={patientData.vitals}
-        consultationMessage="Vitals are automatically updated."
-        triggerSOS={() => alert(`Triggering SOS for ${patientName}...`)}
-        userRole="doctor"
-      />
-      
-      {/* New: Vital Trends Charts */}
-      <div className="chart-section">
-        <h4 className="data-section-title">Vital Trends</h4>
-        <div className="chart-container">
-          <Line options={chartOptions} data={heartRateChartData} />
+            if (selectedPatient) {
+                // Attach mock data for charts/history until the backend serves it
+                selectedPatient.history = MOCK_HISTORY; 
+                selectedPatient.consultations = MOCK_CONSULTATIONS;
+                setPatient(selectedPatient);
+            }
+        } catch (error) {
+            console.error("Error fetching patient details:", error);
+            setPatient(null);
+        } finally {
+            setIsLoading(false);
+        }
+    }, [patientId]);
+
+    useEffect(() => {
+        fetchPatientDetails();
+    }, [fetchPatientDetails]);
+
+    // --- Chart Data & Options ---
+    const chartOptions = {
+        responsive: true,
+        plugins: {
+            legend: { position: 'top' },
+            title: { display: false },
+        },
+    };
+
+    const heartRateChartData = {
+        labels: MOCK_HISTORY.dates,
+        datasets: [
+            {
+                label: 'Heart Rate (bpm)',
+                data: MOCK_HISTORY.heartRate,
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                tension: 0.4,
+            },
+        ],
+    };
+
+    const bloodPressureChartData = {
+        labels: MOCK_HISTORY.dates,
+        datasets: [
+            {
+                label: 'Systolic (mmHg)',
+                data: MOCK_HISTORY.systolic,
+                borderColor: 'rgb(53, 162, 235)',
+                backgroundColor: 'rgba(53, 162, 235, 0.5)',
+                tension: 0.4,
+            },
+            {
+                label: 'Diastolic (mmHg)',
+                data: MOCK_HISTORY.diastolic,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                tension: 0.4,
+            },
+        ],
+    };
+
+    if (isLoading) {
+        return <div className="loading-message">Loading comprehensive patient record...</div>;
+    }
+    if (!patient) {
+        return <div className="error-message">Patient record not found. ID: {patientId}</div>;
+    }
+
+    return (
+        <div className="patient-record-container">
+            {/* Header and Back Button */}
+            <div className="record-header">
+                <button onClick={onBack} className="back-button">
+                    <ChevronLeft size={20} /> Back to Triage Dashboard
+                </button>
+                <h1 className="record-title">Comprehensive Patient Record: {patient.name}</h1>
+                <p className="record-meta">ID: {patient.id} | Age: {patient.age} | Location: {patient.location}</p>
+            </div>
+
+            {/* Current Vitals Snapshot */}
+            <div className="data-section-title">Latest Vitals Snapshot</div>
+            <div className="vitals-summary-grid">
+                <div className="summary-card status-red">
+                    <Heart size={24} />
+                    <span className="summary-value">{patient.vitals.heartRate}</span>
+                    <span className="summary-label">Heart Rate</span>
+                </div>
+                <div className="summary-card status-blue">
+                    <Activity size={24} />
+                    <span className="summary-value">{patient.vitals.bloodPressure}</span>
+                    <span className="summary-label">Blood Pressure</span>
+                </div>
+                <div className="summary-card status-cyan">
+                    <Droplets size={24} />
+                    <span className="summary-value">{patient.vitals.spo2}</span>
+                    <span className="summary-label">SpO2</span>
+                </div>
+                <div className="summary-card status-orange">
+                    <Thermometer size={24} />
+                    <span className="summary-value">{patient.vitals.temperature}</span>
+                    <span className="summary-label">Temperature</span>
+                </div>
+            </div>
+
+            {/* Trend Charts */}
+            <div className="data-section-title">Vitals Trend Analysis (Last 7 Days)</div>
+            <div className="chart-analysis-grid">
+                <div className="chart-card">
+                    <h3 className="chart-card-title">Heart Rate Trend</h3>
+                    <Line options={chartOptions} data={heartRateChartData} />
+                </div>
+                <div className="chart-card">
+                    <h3 className="chart-card-title">Blood Pressure Trend</h3>
+                    <Line options={chartOptions} data={bloodPressureChartData} />
+                </div>
+            </div>
+
+            {/* Consultation History */}
+            <div className="data-section-title">Consultation & EMR History</div>
+            <div className="consultation-history-list">
+                {patient.consultations && patient.consultations.length > 0 ? (
+                    patient.consultations.map((entry, index) => (
+                        <div key={index} className="consultation-entry">
+                            <div className="consultation-meta">
+                                <Calendar size={16} />
+                                <p className="consultation-date">{entry.date}</p>
+                                <p className="consultation-doctor">Attending: {entry.doctor}</p>
+                            </div>
+                            <p className="consultation-message">{entry.message}</p>
+                        </div>
+                    ))
+                ) : (
+                    <p className="empty-history">No consultation history found for this patient.</p>
+                )}
+            </div>
         </div>
-        <div className="chart-container">
-          <Line options={chartOptions} data={bloodPressureChartData} />
-        </div>
-      </div>
-      
-      {/* Consultation History Section */}
-      <h4 className="data-section-title">Consultation History</h4>
-      <div className="consultation-history-list">
-        {patientData.consultationHistory.map((entry, index) => (
-          <div key={index} className="consultation-entry">
-            <p className="consultation-date">{entry.date}</p>
-            <p className="consultation-message">{entry.message}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
+    );
 }
-
-export default DoctorPatientData;

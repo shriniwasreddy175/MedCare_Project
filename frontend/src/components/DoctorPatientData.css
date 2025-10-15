@@ -1,227 +1,165 @@
-/* DoctorPatientData.css */
+/* DoctorPatientData.css - Styles for the Comprehensive Patient Record View */
 
-.doctor-patient-data-container {
-    padding: 20px;
+.patient-record-container {
+    max-width: 100%;
+    margin: 0 auto;
+    padding: 16px;
     background-color: #ffffff;
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
 }
 
-.patient-data-empty-state {
-    text-align: center;
-    padding: 50px;
-    color: #718096;
-    font-style: italic;
-    font-size: 1.1em;
+.record-header {
+    border-bottom: 2px solid #e2e8f0;
+    padding-bottom: 16px;
+    margin-bottom: 24px;
 }
 
-.patient-name-header {
+.back-button {
+    background-color: #f7fafc;
+    border: 1px solid #cbd5e0;
+    color: #4a5568;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    transition: background-color 0.2s;
+}
+
+.back-button:hover {
+    background-color: #edf2f7;
+}
+
+.record-title {
     font-size: 28px;
     font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 8px;
-    border-bottom: 2px solid #edf2f7;
-    padding-bottom: 10px;
+    color: #2D3748;
+    margin: 0;
 }
 
-.patient-location {
-    font-size: 16px;
-    color: #4a5568;
-    margin-bottom: 20px;
+.record-meta {
+    font-size: 14px;
+    color: #718096;
+    margin-top: 4px;
 }
 
-.section-title {
+.data-section-title {
     font-size: 20px;
-    font-weight: 600;
-    color: #2d3748;
-    margin-top: 30px;
-    margin-bottom: 15px;
-    border-left: 4px solid #4CAF50; /* Green accent */
-    padding-left: 10px;
+    font-weight: bold;
+    color: #388e3c; /* Doctor theme green */
+    margin-top: 32px;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e6f7ea;
 }
 
-/* |--------------------------------------------------------------------------
-| Current Vitals Grid (Main 4 Vitals)
-|--------------------------------------------------------------------------
-*/
-.current-vitals-grid {
+/* --- Vitals Summary Grid --- */
+.vitals-summary-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
     gap: 20px;
-    margin-bottom: 30px;
+    margin-bottom: 32px;
 }
 
-.vital-card {
+.summary-card {
     background-color: #f7fafc;
-    border-radius: 8px;
-    padding: 18px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    text-align: center;
-    border: 1px solid #e2e8f0;
-    transition: transform 0.2s;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    border-left: 5px solid;
 }
 
-.vital-card:hover {
-    transform: translateY(-5px);
-}
-
-.vital-card.status-alert { border-color: #ef4444; background-color: #fee2e2; }
-.vital-card.status-monitoring { border-color: #fbbf24; background-color: #fffbeb; }
-.vital-card.status-normal { border-color: #4CAF50; background-color: #f0fff4; }
-
-.vital-icon-wrapper {
-    color: #4CAF50; /* Default icon color */
-    margin-bottom: 10px;
-}
-.vital-card.status-alert .vital-icon-wrapper { color: #ef4444; }
-.vital-card.status-monitoring .vital-icon-wrapper { color: #fbbf24; }
-
-
-.vital-label {
-    font-size: 14px;
-    color: #718096;
-    margin-bottom: 5px;
-    text-transform: capitalize;
-}
-
-.vital-value {
+.summary-value {
     font-size: 24px;
     font-weight: 700;
-    color: #2d3748;
-    margin-bottom: 5px;
-}
-.vital-card.status-alert .vital-value { color: #ef4444; }
-.vital-card.status-monitoring .vital-value { color: #fbbf24; }
-
-
-.vital-range {
-    font-size: 12px;
-    color: #a0aec0;
 }
 
-/* |--------------------------------------------------------------------------
-| Detailed Metrics Grid (Smaller Cards for Less Critical Data)
-|--------------------------------------------------------------------------
-*/
-.detailed-metrics-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Smaller cards */
-    gap: 15px;
-    margin-bottom: 30px;
-}
-
-.metric-card {
-    background-color: #ffffff;
-    border-radius: 8px;
-    padding: 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-    border: 1px solid #edf2f7;
-    text-align: left;
-}
-
-.metric-card.status-alert { border-color: #ef4444; background-color: #fee2e2; }
-.metric-card.status-elevated { border-color: #fbbf24; background-color: #fffbeb; } /* New status for slightly high */
-
-
-.metric-icon {
-    color: #4CAF50;
-    margin-right: 5px;
-    vertical-align: middle;
-}
-.metric-card.status-alert .metric-icon { color: #ef4444; }
-.metric-card.status-elevated .metric-icon { color: #fbbf24; }
-
-
-.metric-label {
+.summary-label {
     font-size: 12px;
     color: #718096;
-    margin: 0;
-    text-transform: capitalize;
-    display: flex;
-    align-items: center;
-    gap: 5px;
+    text-transform: uppercase;
 }
 
-.metric-value {
+/* Status Colors */
+.status-red { border-left-color: #e53e3e; color: #e53e3e; }
+.status-blue { border-left-color: #3182ce; color: #3182ce; }
+.status-cyan { border-left-color: #00bcd4; color: #00bcd4; }
+.status-orange { border-left-color: #f6ad55; color: #f6ad55; }
+
+
+/* --- Chart Analysis --- */
+.chart-analysis-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.chart-card {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.chart-card-title {
     font-size: 18px;
     font-weight: 600;
     color: #2d3748;
-    margin: 5px 0 0;
-}
-.metric-card.status-alert .metric-value { color: #ef4444; }
-.metric-card.status-elevated .metric-value { color: #fbbf24; }
-
-
-.metric-note {
-    font-size: 10px;
-    color: #a0aec0;
-    margin-top: 5px;
+    margin-bottom: 15px;
+    text-align: center;
 }
 
-/* |--------------------------------------------------------------------------
-| Consultation History
-|--------------------------------------------------------------------------
-*/
+/* --- Consultation History --- */
 .consultation-history-list {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 16px;
 }
 
 .consultation-entry {
-    background-color: #f7fafc;
-    border-left: 5px solid #4CAF50;
+    padding: 16px;
+    background-color: #f0fff4; /* Very light green background */
     border-radius: 8px;
-    padding: 15px;
+    border: 1px solid #c6f6d5;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.consultation-date {
-    font-size: 14px;
-    font-weight: 600;
-    color: #2d3748;
-    margin-bottom: 8px;
+.consultation-meta {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #38a169;
 }
+
+.consultation-date { font-weight: bold; }
+.consultation-doctor { font-style: italic; }
 
 .consultation-message {
-    font-size: 14px;
-    color: #4a5568;
-    line-height: 1.5;
-    display: flex;
-    align-items: flex-start; /* Align icon to top if message wraps */
-    gap: 8px;
+    margin: 0;
+    line-height: 1.6;
+    color: #2d3748;
 }
 
-.no-history-message {
+.empty-history, .loading-message, .error-message {
     text-align: center;
+    padding: 40px;
     color: #718096;
     font-style: italic;
-    padding: 20px;
 }
 
-/* |--------------------------------------------------------------------------
-| Responsive Adjustments
-|--------------------------------------------------------------------------
-*/
-@media (max-width: 768px) {
-    .current-vitals-grid, .detailed-metrics-grid {
-        grid-template-columns: 1fr; /* Stack cards on smaller screens */
-    }
-
-    .doctor-patient-data-container {
-        padding: 15px;
-    }
-
-    .patient-name-header {
-        font-size: 24px;
-    }
-}
-
-@media (max-width: 480px) {
-    .current-vitals-grid {
+/* Responsive adjustments */
+@media (max-width: 900px) {
+    .chart-analysis-grid {
         grid-template-columns: 1fr;
     }
 }

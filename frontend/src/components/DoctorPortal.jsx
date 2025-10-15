@@ -1,36 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import './DoctorPortal.css';
-import { Users, Bell, ArrowUp, Stethoscope, LogOut, Shield, TrendingUp, Search, Calendar, CheckCircle, FileText,Heart, Activity, Thermometer, MapPin } from 'lucide-react';
-//import DoctorPatientData from './DoctorPatientData'; // Component for viewing deep patient data
+import { Users, Bell, ArrowUp, Stethoscope, LogOut, Shield, TrendingUp, Search, Calendar, CheckCircle, FileText, Heart, Activity, Thermometer, MapPin } from 'lucide-react';
+import DoctorPatientData from './DoctorPatientData';
 
-// --- Mock Data for Doctor's Patient List ---
-const MOCK_PATIENT_LIST_DOCTOR = [
-    {
-        "id": "P001", "name": "Elara Vance", "age": 68, "gender": "Female", "location": "Room 301",
-        "hasAlert": true, "caseType": "Escalated", "escalatedBy": "Nurse John", "alertTime": "15:45",
-        "vitals": {"heartRate": "115 bpm", "bloodPressure": "150/95 mmHg", "spO2": "93%", "temperature": "37.8°C"}
-    },
-    {
-        "id": "P002", "name": "John Doe", "age": 45, "gender": "Male", "location": "Room 305",
-        "hasAlert": false, "caseType": "Active", "escalatedBy": null, "alertTime": null,
-        "vitals": {"heartRate": "72 bpm", "bloodPressure": "120/80 mmHg", "spO2": "98%", "temperature": "36.5°C"}
-    },
-    {
-        "id": "P003", "name": "Sarah Connor", "age": 29, "gender": "Female", "location": "HomeCare",
-        "hasAlert": true, "caseType": "New Case", "escalatedBy": null, "alertTime": "14:10",
-        "vitals": {"heartRate": "88 bpm", "bloodPressure": "145/90 mmHg", "spO2": "96%", "temperature": "36.9°C"}
-    },
-    {
-        "id": "P004", "name": "Marcus Kane", "age": 78, "gender": "Male", "location": "Room 310",
-        "hasAlert": true, "caseType": "Escalated", "escalatedBy": "Nurse Jane", "alertTime": "15:55",
-        "vitals": {"heartRate": "55 bpm", "bloodPressure": "110/70 mmHg", "spO2": "97%", "temperature": "37.0°C"}
-    },
-    {
-        "id": "P005", "name": "Jane Smith", "age": 35, "gender": "Female", "location": "Room 302",
-        "hasAlert": false, "caseType": "Active", "escalatedBy": null, "alertTime": null,
-        "vitals": {"heartRate": "80 bpm", "bloodPressure": "125/85 mmHg", "spO2": "99%", "temperature": "37.2°C"}
-    },
-];
+// REMOVED: MOCK_PATIENT_LIST_DOCTOR 
 
 const API_URL = 'http://localhost:5000/api';
 
@@ -38,9 +11,64 @@ export default function DoctorPortal({ onLogout }) {
     const [activeTab, setActiveTab] = useState('escalated');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [patients, setPatients] = useState(MOCK_PATIENT_LIST_DOCTOR);
-    const [filteredPatients, setFilteredPatients] = useState(MOCK_PATIENT_LIST_DOCTOR);
+    const [patients, setPatients] = useState([]); // INITIALIZED AS EMPTY ARRAY
+    const [filteredPatients, setFilteredPatients] = useState([]);
     const [selectedPatientId, setSelectedPatientId] = useState(null);
+
+    // Fetch patient data from the backend (same logic as NursePortal)
+    const fetchPatients = useCallback(async () => {
+        try {
+            const response = await fetch(`${API_URL}/patients`);
+            if (!response.ok) throw new Error('Failed to fetch patients from API');
+            
+            const data = await response.json();
+            
+            // NOTE: The backend must ensure "escalatedBy" and "caseType" fields exist.
+            // We enhance data here for client-side filtering if missing from API:
+            const processedData = data.map(p => ({
+                ...p,
+                caseType: p.alertLevel === 'doctor' ? 'Escalated' : (p.hasAlert && p.alertLevel === 'nurse') ? 'New Case' : 'Active',
+                escalatedBy: p.alertLevel === 'doctor' ? (p.escalatedBy || 'System Alert') : null 
+            }));
+
+            setPatients(processedData);
+        } catch (error) {
+            console.error("Error fetching patient list for Doctor Portal:", error);
+            // Handle error state gracefully, e.g., set error message
+        }
+    }, []);
+
+    // Fetch data on mount and update clock
+    useEffect(() => {
+        fetchPatients(); 
+        const interval = setInterval(fetchPatients, 15000); // Refresh data every 15s
+        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+        
+        return () => {
+            clearInterval(interval);
+            clearInterval(timer);
+        };
+    }, [fetchPatients]);
+
+    // Filtering logic now runs whenever patients or searchQuery changes
+    useEffect(() => {
+        const searchFiltered = patients.filter(patient =>
+            patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            patient.location.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+
+        let tabFiltered;
+        if (activeTab === 'new_cases') {
+            tabFiltered = searchFiltered.filter(p => p.caseType === 'New Case');
+        } else if (activeTab === 'escalated') {
+            tabFiltered = searchFiltered.filter(p => p.caseType === 'Escalated');
+        } else {
+            tabFiltered = searchFiltered; 
+        }
+
+        setFilteredPatients(tabFiltered);
+    }, [searchQuery, activeTab, patients]);
+
 
     const totalActive = patients.length;
     const newCasesCount = patients.filter(p => p.caseType === 'New Case').length;
@@ -52,108 +80,89 @@ export default function DoctorPortal({ onLogout }) {
         { id: 'active', label: 'Active Patients', icon: Users, count: totalActive, color: 'text-blue-600' },
         { id: 'full_records', label: 'View Full Records', icon: FileText },
     ];
-
-    useEffect(() => {
-        const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
-    }, []);
-
-    useEffect(() => {
-        // Filter patients based on search query
-        const searchFiltered = MOCK_PATIENT_LIST_DOCTOR.filter(patient =>
-            patient.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            patient.location.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-
-        // Filter based on active tab
-        let tabFiltered;
-        if (activeTab === 'new_cases') {
-            tabFiltered = searchFiltered.filter(p => p.caseType === 'New Case');
-        } else if (activeTab === 'escalated') {
-            tabFiltered = searchFiltered.filter(p => p.caseType === 'Escalated');
-        } else {
-            tabFiltered = searchFiltered; // Default: 'active' or search-only
-        }
-
-        setFilteredPatients(tabFiltered);
-    }, [searchQuery, activeTab]);
-
+    
     const handleAcknowledgeCase = (patientId) => {
-        // Logic to mark case as reviewed (mocked)
-        alert(`Case for Patient ${patientId} acknowledged by doctor.`);
+        // Mocked client-side update
         setPatients(prev => prev.map(p => 
-            p.id === patientId ? { ...p, hasAlert: false, caseType: 'Active' } : p
+            p.id === patientId ? { ...p, hasAlert: false, caseType: 'Active', alertLevel: 'none' } : p
         ));
+        // NOTE: In a real app, this sends an API call to update the database record.
     };
 
     const handleAddNotes = (patientName) => {
         alert(`Opening EMR form to add notes for ${patientName}...`);
-        // In a real app, this would open a modal/new route for EMR entry
     };
 
     // --- Conditional Rendering of Patient List ---
     const renderPatientList = () => (
         <div className="patient-list-container">
-            {filteredPatients.map((patient) => (
-                <div
-                    key={patient.id}
-                    className={`patient-card-doctor ${patient.caseType === 'Escalated' ? 'alert-card' : patient.caseType === 'New Case' ? 'warning-card' : ''}`}
-                >
-                    {/* TOP ROW: Patient Info and Alert Source */}
-                    <div className="patient-info-summary">
-                        <Stethoscope size={24} className="text-green-600"/>
-                        <div>
-                            <h3 className="patient-name-doctor">{patient.name}</h3>
-                            <p className="patient-meta-doctor">{patient.age}, {patient.gender} • {patient.location}</p>
-                            {patient.escalatedBy && (
-                                <p className="escalation-source">
-                                    <ArrowUp size={14} /> Escalated by: **{patient.escalatedBy}**
-                                </p>
+            {filteredPatients.length === 0 ? (
+                <div className="empty-state-message">No patients found in this view. Check "Active Patients" or adjust search.</div>
+            ) : (
+                filteredPatients.map((patient) => (
+                    <div
+                        key={patient.id}
+                        className={`patient-card-doctor ${patient.caseType === 'Escalated' ? 'alert-card' : patient.caseType === 'New Case' ? 'warning-card' : ''}`}
+                    >
+                        {/* TOP ROW: Patient Info and Alert Source */}
+                        <div className="patient-info-summary">
+                            <Stethoscope size={24} className="text-green-600"/>
+                            <div>
+                                <h3 className="patient-name-doctor">{patient.name}</h3>
+                                <p className="patient-meta-doctor">{patient.age}, {patient.gender} • {patient.location}</p>
+                                {patient.caseType === 'Escalated' && patient.escalatedBy && (
+                                    <p className="escalation-source">
+                                        <ArrowUp size={14} /> Escalated by: **{patient.escalatedBy}**
+                                    </p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* MIDDLE ROW: Vitals Snapshot */}
+                        <div className="vitals-snapshot-doctor">
+                            <div className="vital-snap-item">
+                                <Heart size={16} className="text-red-500" />
+                                <span className="vital-snap-value">{patient.vitals.heartRate}</span>
+                                <span className="vital-snap-label">HR</span>
+                            </div>
+                            <div className="vital-snap-item">
+                                <Activity size={16} className="text-blue-500" />
+                                <span className="vital-snap-value">{patient.vitals.bloodPressure}</span>
+                                <span className="vital-snap-label">BP</span>
+                            </div>
+                            <div className="vital-snap-item">
+                                <Thermometer size={16} className="text-orange-500" />
+                                <span className="vital-snap-value">{patient.vitals.temperature}</span>
+                                <span className="vital-snap-label">Temp</span>
+                            </div>
+                        </div>
+
+                        {/* BOTTOM ROW: Doctor Actions */}
+                        <div className="doctor-actions-bar">
+                            {patient.caseType !== 'Active' && (
+                                <button 
+                                    onClick={() => handleAcknowledgeCase(patient.id)}
+                                    className="button button-acknowledge"
+                                >
+                                    <CheckCircle size={16} /> Acknowledge
+                                </button>
                             )}
-                        </div>
-                    </div>
-
-                    {/* MIDDLE ROW: Vitals Snapshot */}
-                    <div className="vitals-snapshot-doctor">
-                        <div className="vital-snap-item">
-                            <Heart size={16} className="text-red-500" />
-                            <span className="vital-snap-value">{patient.vitals.heartRate}</span>
-                        </div>
-                        <div className="vital-snap-item">
-                            <Activity size={16} className="text-blue-500" />
-                            <span className="vital-snap-value">{patient.vitals.bloodPressure}</span>
-                        </div>
-                        <div className="vital-snap-item">
-                            <Thermometer size={16} className="text-orange-500" />
-                            <span className="vital-snap-value">{patient.vitals.temperature}</span>
-                        </div>
-                    </div>
-
-                    {/* BOTTOM ROW: Doctor Actions */}
-                    <div className="doctor-actions-bar">
-                        {patient.caseType !== 'Active' && (
                             <button 
-                                onClick={() => handleAcknowledgeCase(patient.id)}
-                                className="button button-acknowledge"
+                                onClick={() => handleAddNotes(patient.name)}
+                                className="button button-notes"
                             >
-                                <CheckCircle size={16} /> Acknowledge
+                                <FileText size={16} /> Add Notes
                             </button>
-                        )}
-                        <button 
-                            onClick={() => handleAddNotes(patient.name)}
-                            className="button button-notes"
-                        >
-                            <FileText size={16} /> Add Notes
-                        </button>
-                        <button 
-                            onClick={() => setSelectedPatientId(patient.id)}
-                            className="button button-view-record"
-                        >
-                            View Record
-                        </button>
+                            <button 
+                                onClick={() => setSelectedPatientId(patient.id)}
+                                className="button button-view-record"
+                            >
+                                View Record
+                            </button>
+                        </div>
                     </div>
-                </div>
-            ))}
+                ))
+            )}
         </div>
     );
     
@@ -179,7 +188,6 @@ export default function DoctorPortal({ onLogout }) {
                                 key={item.id}
                                 onClick={() => {
                                     if (item.id === 'full_records') {
-                                        // Placeholder action
                                         alert('Navigating to full patient record database...');
                                     } else {
                                         setActiveTab(item.id);
@@ -200,7 +208,6 @@ export default function DoctorPortal({ onLogout }) {
                 </div>
 
                 <div className="doctor-profile-section">
-                    {/* Profile and Logout */}
                     <div className="profile-info">
                         <div className="profile-avatar-bg">
                             <span className="profile-avatar-text">D</span>
