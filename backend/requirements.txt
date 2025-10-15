@@ -65,3 +65,12 @@ flask-migrate
 python-dotenv
 google-generativeai
 psycopg2-binary  # CRITICAL: For connecting to PostgreSQL
+Flask
+flask-sqlalchemy
+flask-bcrypt
+flask-cors
+flask-migrate
+python-dotenv
+google-generativeai
+gunicorn  # Essential production WSGI server
+psycopg2-binary  # CRITICAL: Python adapter for PostgreSQL

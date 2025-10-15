@@ -17,16 +17,22 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- Database Configuration ---
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///medcare.db'
+# 1. NEW: Reads the PostgreSQL URI from Render environment variables
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL") 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_please_change_me") # Added for security
+app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_please_change_me") 
 
 db = SQLAlchemy(app)
 bcrypt = Bcrypt(app)
-migrate = Migrate(app, db) # NEW: Initialize Flask-Migrate
+migrate = Migrate(app, db)
 
 # Configure CORS
-CORS(app, resources={r"/api/*": {"origins": ["http://localhost:5173", "http://localhost:3000"]}})
+# 2. NEW: Added the live Render frontend domain to allow cross-origin requests
+CORS(app, resources={r"/api/*": {"origins": [
+    "http://localhost:5173", 
+    "http://localhost:3000",
+    "https://medcare-api-i5cm.onrender.com" # E.g., https://medcare-frontend.onrender.com
+]}})
 
 # --- Configure the Gemini API ---
 api_key = os.getenv("GEMINI_API_KEY")
