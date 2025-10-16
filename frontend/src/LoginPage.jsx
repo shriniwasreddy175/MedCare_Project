@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import './LoginPage.css'; // Importing dedicated CSS for modularity
+import './LoginPage.css';
 
 const API_URL = 'https://medcare-api-i5cm.onrender.com/api'; 
 
@@ -14,9 +14,8 @@ function LoginPage({ onLoginSuccess }) {
         password: '',
     });
 
-    // State for comprehensive Registration Form (Includes all fields for PATIENT role)
+    // State for comprehensive Registration Form
     const [registerData, setRegisterData] = useState({
-        // Core Fields
         username: '',
         password: '',
         confirmPassword: '',
@@ -58,10 +57,10 @@ function LoginPage({ onLoginSuccess }) {
                 // Pass role and name upon successful login
                 onLoginSuccess(data.role, data.name); 
             } else {
-                setMessage(data.message || "Login failed. Check credentials.");
+                setMessage(`Error: ${data.message || "Login failed. Check credentials."}`);
             }
         } catch (error) {
-            setMessage("Network error or server unreachable. Please try again.");
+            setMessage("Error: Network error or server unreachable. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -92,7 +91,7 @@ function LoginPage({ onLoginSuccess }) {
                 payload.age = registerData.age;
                 payload.gender = registerData.gender;
                 payload.location = registerData.location;
-                payload.guardian_phone = registerData.guardian_phone; // NEW FIELD
+                payload.guardian_phone = registerData.guardian_phone;
             }
 
             const response = await fetch(`${API_URL}/register`, {
@@ -104,21 +103,28 @@ function LoginPage({ onLoginSuccess }) {
             const data = await response.json();
 
             if (response.ok) {
-                setMessage(data.message + " You can now log in.");
+                setMessage(`Success: ${data.message} You can now log in.`);
                 setIsRegistering(false); // Switch to login view
             } else {
-                setMessage(data.message || "Registration failed. Please check inputs.");
+                setMessage(`Error: ${data.message || "Registration failed. Please check inputs."}`);
             }
         } catch (error) {
-            setMessage("Network error or server unreachable. Please try again.");
+            setMessage("Error: Network error or server unreachable. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
+    const renderMessage = () => {
+        if (!message) return null;
+        const isError = message.startsWith('Error:');
+        return <p className={`status-message ${isError ? 'error' : 'success'}`}>{message.replace(/^(Error: |Success: )/, '')}</p>;
+    };
+
     const renderLoginForm = () => (
         <div className="auth-box">
             <h2 className="form-title">MedCare Login</h2>
+            {renderMessage()} 
             <form onSubmit={handleLogin}>
                 <div className="form-group">
                     <label htmlFor="username">Username</label>
@@ -149,7 +155,7 @@ function LoginPage({ onLoginSuccess }) {
                 </button>
             </form>
             <p className="form-footer">
-                Don't have an account? <a href="#" onClick={() => setIsRegistering(true)}>Register</a>
+                Don't have an account? <a href="#" onClick={() => { setIsRegistering(true); setMessage(''); }}>Register</a>
             </p>
         </div>
     );
@@ -157,6 +163,7 @@ function LoginPage({ onLoginSuccess }) {
     const renderRegisterForm = () => (
         <div className="auth-box registration-form">
             <h2 className="form-title">MedCare Registration</h2>
+            {renderMessage()}
             <form onSubmit={handleRegister}>
                 <div className="role-selector">
                     <label className="label-block">Registering as:</label>
@@ -168,7 +175,7 @@ function LoginPage({ onLoginSuccess }) {
                 </div>
                 
                 <div className="form-grid">
-                    {/* CORE USER FIELDS */}
+                    {/* CORE USER FIELDS (Username, Password, Name, Email) */}
                     <div className="form-group">
                         <label>Full Name</label>
                         <input type="text" name="full_name" value={registerData.full_name} onChange={handleRegisterChange} required className="input-field" />
@@ -188,6 +195,11 @@ function LoginPage({ onLoginSuccess }) {
                     <div className="form-group">
                         <label>Confirm Password</label>
                         <input type="password" name="confirmPassword" value={registerData.confirmPassword} onChange={handleRegisterChange} required className="input-field" />
+                    </div>
+                    {/* Placeholder to keep grid aligned */}
+                    <div className="form-group">
+                        <label>Role</label>
+                        <input type="text" value={registerData.role.charAt(0).toUpperCase() + registerData.role.slice(1)} disabled className="input-field disabled-input" />
                     </div>
                 </div>
 
@@ -226,7 +238,7 @@ function LoginPage({ onLoginSuccess }) {
                 </button>
             </form>
             <p className="form-footer">
-                Already have an account? <a href="#" onClick={() => setIsRegistering(false)}>Login</a>
+                Already have an account? <a href="#" onClick={() => { setIsRegistering(false); setMessage(''); }}>Login</a>
             </p>
         </div>
     );
@@ -238,7 +250,6 @@ function LoginPage({ onLoginSuccess }) {
                 <p className="app-subtitle">Your AI-Powered Health Companion</p>
             </header>
             <main className="login-main">
-                <p className={`status-message ${message.startsWith('Error') ? 'error' : 'success'}`}>{message}</p>
                 {isRegistering ? renderRegisterForm() : renderLoginForm()}
             </main>
         </div>

@@ -62,16 +62,25 @@
     margin-bottom: 24px;
 }
 
-/* Status Messages */
+/* Status Messages FIX */
 .status-message {
-    margin: 15px 0;
+    margin: 15px auto; /* Centers message horizontally */
+    padding: 8px 15px;
+    border-radius: 6px;
     font-weight: 600;
+    text-align: center; /* Ensures text is centered */
+    width: fit-content;
+    border: 1px solid transparent;
 }
 .status-message.error {
-    color: #ef4444;
+    color: #c53030;
+    background-color: #fef2f2;
+    border-color: #fbb6ce;
 }
 .status-message.success {
-    color: #10b981;
+    color: #276749;
+    background-color: #f0fff4;
+    border-color: #9ae6b4;
 }
 
 /* Form Groups and Inputs */
