@@ -50,6 +50,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), nullable=False)
     full_name = db.Column(db.String(100)) # NEW: Added full name column
+    email = db.Column(db.String(120), unique=True, nullable=True) # NEW: Added email column
     patient_ref = db.relationship('Patient', backref='system_user', uselist=False)
 
 class Patient(db.Model):
