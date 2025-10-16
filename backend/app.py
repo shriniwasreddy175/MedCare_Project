@@ -51,6 +51,7 @@ class User(db.Model):
     role = db.Column(db.String(20), nullable=False)
     full_name = db.Column(db.String(100)) # NEW: Added full name column
     email = db.Column(db.String(120), unique=True, nullable=True) # NEW: Added email column
+    guardian_phone = db.Column(db.String(30)) # NEW: Added guardian phone number column
     patient_ref = db.relationship('Patient', backref='system_user', uselist=False)
 
 class Patient(db.Model):
@@ -62,7 +63,7 @@ class Patient(db.Model):
     location = db.Column(db.String(50))
     is_pregnant = db.Column(db.Boolean, default=False)
     pregnancy_week = db.Column(db.Integer)
-    
+    guardian_phone = db.Column(db.String(30)) # NEW: Added guardian phone number
     vitals = db.relationship('VitalsRecord', backref='patient', lazy='dynamic')
     consultations = db.relationship('Consultation', backref='patient', lazy='dynamic')
 
