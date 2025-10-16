@@ -209,10 +209,13 @@ def login():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    """Handles new user registration requests, capturing all patient profile data."""
+    """
+    Handles new user registration requests, ensuring database integrity by using 
+    object relationships for Foreign Keys.
+    """
     data = request.json
     
-    # 1. Core User Fields (Required for all roles)
+    # 1. Core User Fields & Validation (No change needed here)
     username = data.get('username')
     password = data.get('password')
     role = data.get('role')
@@ -230,7 +233,7 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
-    # 2. Create User Record and ADD IT to the session (NO COMMIT YET)
+    # 2. Create User Record and ADD IT to the session
     new_user = User(
         username=username, 
         password_hash=hashed_password, 
@@ -240,7 +243,7 @@ def register():
     )
     db.session.add(new_user)
     
-    # 3. Create Patient Record (Conditional for 'patient' role)
+    # 3. Create Patient Record and attach Vitals (Conditional for 'patient' role)
     if role == 'patient':
         # Patient-specific fields
         age = data.get('age')
@@ -248,16 +251,9 @@ def register():
         location = data.get('location')
         guardian_phone = data.get('guardian_phone')
         
-        # We must COMMIT the USER first to guarantee we get an ID if Patient depends on it
-        # However, it's safer to commit all at once. Let's rely on relationship autoflush if possible.
-        
-        # *****************************************************************
-        # ** THE NEW, CORRECTED BLOCK **
-        # *****************************************************************
-        
-        # 3a. Create Patient (Which depends on new_user being flushed)
         new_patient = Patient(
-            user_id=new_user.id, # This relies on SQLAlchemy autogenerating new_user.id during flush
+            # user_id is automatically handled via relationship established after first flush
+            system_user=new_user, # Attach the User object directly
             name=full_name,
             age=age,
             gender=gender,
@@ -266,21 +262,28 @@ def register():
         )
         db.session.add(new_patient)
         
-        # 3b. Create VitalsRecord (Which depends on new_patient being flushed)
-        db.session.add(VitalsRecord(
-            patient_id=new_patient.id, # This relies on new_patient.id being available during flush
+        # 4. CREATE VITAL RECORD AND ATTACH IT TO THE PATIENT OBJECT
+        # This is the crucial change that bypasses the manual patient_id assignment
+        initial_vitals = VitalsRecord(
             heart_rate="70 bpm", blood_pressure="110/70 mmHg", spo2="97%", 
             temperature="36.5°C", ecg_status="Normal Rhythm"
-        ))
+        )
+        
+        # This automatically links initial_vitals.patient_id = new_patient.id
+        new_patient.vitals.append(initial_vitals) 
     
-    # 4. FINAL COMMIT: Only commit once after all objects are added
+    # 5. FINAL COMMIT: Only commit once after all related objects are linked
     try:
         db.session.commit()
         return jsonify({"message": f"Registration successful for {full_name} as {role}!"}), 200
     except Exception as e:
         db.session.rollback()
+        # The NotNullViolation is an Integrity Error, providing better feedback
+        if "NotNullViolation" in str(e):
+             return jsonify({"message": "Registration failed: Missing required patient data or username conflict."}), 500
+
         print(f"Database Integrity Error during registration: {e}")
-        return jsonify({"message": "Registration failed due to server error (Database Integrity)."}), 500
+        return jsonify({"message": "Registration failed due to unhandled server error."}), 500
 
 @app.route('/api/vitals', methods=['GET'])
 def get_vitals():
