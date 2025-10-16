@@ -1,275 +1,248 @@
 import React, { useState } from 'react';
+import './LoginPage.css'; // Importing dedicated CSS for modularity
+
+const API_URL = 'https://medcare-api-i5cm.onrender.com/api'; 
 
 function LoginPage({ onLoginSuccess }) {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState(''); // New for registration
-  const [role, setRole] = useState('patient'); // Default role for registration
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [isRegistering, setIsRegistering] = useState(false); // New state to toggle forms
+    const [message, setMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [isRegistering, setIsRegistering] = useState(false);
+    
+    // State for Login Form
+    const [loginData, setLoginData] = useState({
+        username: '',
+        password: '',
+    });
 
-  const API_URL = 'https://medcare-api-i5cm.onrender.com/api'; 
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    try {
-      const response = await fetch(`${API_URL}/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        onLoginSuccess(data.role);
-      } else {
-        setError(data.message || 'Login failed. Please check your credentials.');
-      }
-    } catch (err) {
-      console.error("Login API error:", err);
-      setError('Network error or server unreachable. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleRegister = async (e) => {
-    e.preventDefault();
-    setError('');
-    setLoading(true);
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_URL}/register`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ username, password, role }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert(data.message + " Please log in.");
-        setIsRegistering(false); // Switch back to login form
-        setUsername(''); // Clear fields
-        setPassword('');
-        setConfirmPassword('');
-        setRole('patient');
-      } else {
-        setError(data.message || 'Registration failed. Please try again.');
-      }
-    } catch (err) {
-      console.error("Registration API error:", err);
-      setError('Network error or server unreachable. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // --- Inline Styles ---
-  const containerStyle = {
-    minHeight: '100vh',
-    background: 'linear-gradient(to bottom right, #e3f2fd, #bbdefb)',
-    display: 'flex',
-    justifyContent: 'center',
-    alignItems: 'center',
-    fontFamily: 'sans-serif'
-  };
-
-  const authBoxStyle = { // Renamed from loginBoxStyle to be generic
-    backgroundColor: '#fff',
-    padding: '40px',
-    borderRadius: '12px',
-    boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
-    textAlign: 'center',
-    maxWidth: '400px',
-    width: '90%'
-  };
-
-  const titleStyle = {
-    fontSize: '32px',
-    fontWeight: 'bold',
-    color: '#1976D2',
-    marginBottom: '24px'
-  };
-
-  const formGroupStyle = {
-    marginBottom: '20px',
-    textAlign: 'left'
-  };
-
-  const labelStyle = {
-    display: 'block',
-    marginBottom: '8px',
-    fontSize: '16px',
-    color: '#4a5568'
-  };
-
-  const inputStyle = {
-    width: '100%',
-    padding: '12px',
-    border: '1px solid #cbd5e0',
-    borderRadius: '8px',
-    fontSize: '16px',
-    boxSizing: 'border-box'
-  };
-
-  const selectStyle = { // New style for role dropdown
-    ...inputStyle, // Inherit input styles
-    appearance: 'none', // Remove default arrow
-    backgroundImage: 'url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234a5568%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E")',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'right 12px center',
-    backgroundSize: '12px'
-  };
-
-  const buttonStyle = {
-    width: '100%',
-    padding: '14px',
-    backgroundColor: '#1976D2',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '8px',
-    fontSize: '18px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    transition: 'background-color 0.3s ease',
-    opacity: loading ? 0.7 : 1,
-    marginTop: '10px' // Added margin
-  };
-  // Note: Hover styles for inline CSS need more advanced techniques or external CSS.
-
-  const toggleLinkStyle = {
-    color: '#1976D2',
-    cursor: 'pointer',
-    marginTop: '20px',
-    fontSize: '15px',
-    textDecoration: 'underline'
-  };
-
-  const errorStyle = {
-    color: '#ef4444',
-    marginTop: '15px',
-    fontSize: '14px'
-  };
-
-  return (
-    <div style={containerStyle}>
-      <div style={authBoxStyle}>
-        <h2 style={titleStyle}>MedCare {isRegistering ? 'Register' : 'Login'}</h2>
+    // State for comprehensive Registration Form (Includes all fields for PATIENT role)
+    const [registerData, setRegisterData] = useState({
+        // Core Fields
+        username: '',
+        password: '',
+        confirmPassword: '',
+        full_name: '',
+        role: 'patient',
+        email: '',
         
-        {isRegistering ? (
-          // Registration Form
-          <form onSubmit={handleRegister}>
-            <div style={formGroupStyle}>
-              <label htmlFor="regUsername" style={labelStyle}>Username:</label>
-              <input
-                type="text"
-                id="regUsername"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                style={inputStyle}
-                disabled={loading}
-              />
-            </div>
-            <div style={formGroupStyle}>
-              <label htmlFor="regPassword" style={labelStyle}>Password:</label>
-              <input
-                type="password"
-                id="regPassword"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={inputStyle}
-                disabled={loading}
-              />
-            </div>
-            <div style={formGroupStyle}>
-              <label htmlFor="confirmPassword" style={labelStyle}>Confirm Password:</label>
-              <input
-                type="password"
-                id="confirmPassword"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                style={inputStyle}
-                disabled={loading}
-              />
-            </div>
-            <div style={formGroupStyle}>
-              <label htmlFor="role" style={labelStyle}>Role:</label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => setRole(e.target.value)}
-                style={selectStyle}
-                disabled={loading}
-              >
-                <option value="patient">Patient</option>
-                <option value="doctor">Doctor</option>
-                <option value="nurse">Nurse</option>
-              </select>
-            </div>
-            <button type="submit" style={buttonStyle} disabled={loading}>
-              {loading ? 'Registering...' : 'Register'}
-            </button>
-          </form>
-        ) : (
-          // Login Form
-          <form onSubmit={handleLogin}>
-            <div style={formGroupStyle}>
-              <label htmlFor="username" style={labelStyle}>Username:</label>
-              <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                style={inputStyle}
-                disabled={loading}
-              />
-            </div>
-            <div style={formGroupStyle}>
-              <label htmlFor="password" style={labelStyle}>Password:</label>
-              <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                style={inputStyle}
-                disabled={loading}
-              />
-            </div>
-            <button type="submit" style={buttonStyle} disabled={loading}>
-              {loading ? 'Logging in...' : 'Login'}
-            </button>
-          </form>
-        )}
+        // Patient Fields
+        age: '',
+        gender: '',
+        location: '',
+        guardian_phone: '',
+    });
 
-        {error && <p style={errorStyle}>{error}</p>}
+    const handleLoginChange = (e) => {
+        const { name, value } = e.target;
+        setLoginData(prev => ({ ...prev, [name]: value }));
+    };
 
-        <p style={toggleLinkStyle} onClick={() => setIsRegistering(!isRegistering)}>
-          {isRegistering ? 'Already have an account? Login' : 'Don\'t have an account? Register'}
-        </p>
-      </div>
-    </div>
-  );
+    const handleRegisterChange = (e) => {
+        const { name, value } = e.target;
+        setRegisterData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleLogin = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        setLoading(true);
+
+        try {
+            const response = await fetch(`${API_URL}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(loginData)
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                // Pass role and name upon successful login
+                onLoginSuccess(data.role, data.name); 
+            } else {
+                setMessage(data.message || "Login failed. Check credentials.");
+            }
+        } catch (error) {
+            setMessage("Network error or server unreachable. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleRegister = async (e) => {
+        e.preventDefault();
+        setMessage('');
+        setLoading(true);
+
+        if (registerData.password !== registerData.confirmPassword) {
+            setMessage("Error: Passwords do not match.");
+            setLoading(false);
+            return;
+        }
+
+        try {
+            const payload = {
+                username: registerData.username,
+                password: registerData.password,
+                full_name: registerData.full_name,
+                role: registerData.role,
+                email: registerData.email,
+            };
+
+            // Conditionally add specific patient data if role is 'patient'
+            if (registerData.role === 'patient') {
+                payload.age = registerData.age;
+                payload.gender = registerData.gender;
+                payload.location = registerData.location;
+                payload.guardian_phone = registerData.guardian_phone; // NEW FIELD
+            }
+
+            const response = await fetch(`${API_URL}/register`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setMessage(data.message + " You can now log in.");
+                setIsRegistering(false); // Switch to login view
+            } else {
+                setMessage(data.message || "Registration failed. Please check inputs.");
+            }
+        } catch (error) {
+            setMessage("Network error or server unreachable. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const renderLoginForm = () => (
+        <div className="auth-box">
+            <h2 className="form-title">MedCare Login</h2>
+            <form onSubmit={handleLogin}>
+                <div className="form-group">
+                    <label htmlFor="username">Username</label>
+                    <input
+                        type="text"
+                        name="username"
+                        value={loginData.username}
+                        onChange={handleLoginChange}
+                        required
+                        disabled={loading}
+                        className="input-field"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="password">Password</label>
+                    <input
+                        type="password"
+                        name="password"
+                        value={loginData.password}
+                        onChange={handleLoginChange}
+                        required
+                        disabled={loading}
+                        className="input-field"
+                    />
+                </div>
+                <button type="submit" className="button button-login" disabled={loading}>
+                    {loading ? 'Logging in...' : 'Login'}
+                </button>
+            </form>
+            <p className="form-footer">
+                Don't have an account? <a href="#" onClick={() => setIsRegistering(true)}>Register</a>
+            </p>
+        </div>
+    );
+
+    const renderRegisterForm = () => (
+        <div className="auth-box registration-form">
+            <h2 className="form-title">MedCare Registration</h2>
+            <form onSubmit={handleRegister}>
+                <div className="role-selector">
+                    <label className="label-block">Registering as:</label>
+                    <select name="role" value={registerData.role} onChange={handleRegisterChange} className="select-field">
+                        <option value="patient">Patient</option>
+                        <option value="doctor">Doctor</option>
+                        <option value="nurse">Nurse</option>
+                    </select>
+                </div>
+                
+                <div className="form-grid">
+                    {/* CORE USER FIELDS */}
+                    <div className="form-group">
+                        <label>Full Name</label>
+                        <input type="text" name="full_name" value={registerData.full_name} onChange={handleRegisterChange} required className="input-field" />
+                    </div>
+                    <div className="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" value={registerData.email} onChange={handleRegisterChange} required className="input-field" />
+                    </div>
+                    <div className="form-group">
+                        <label>Username</label>
+                        <input type="text" name="username" value={registerData.username} onChange={handleRegisterChange} required className="input-field" />
+                    </div>
+                    <div className="form-group">
+                        <label>Password</label>
+                        <input type="password" name="password" value={registerData.password} onChange={handleRegisterChange} required className="input-field" />
+                    </div>
+                    <div className="form-group">
+                        <label>Confirm Password</label>
+                        <input type="password" name="confirmPassword" value={registerData.confirmPassword} onChange={handleRegisterChange} required className="input-field" />
+                    </div>
+                </div>
+
+                {/* PATIENT-SPECIFIC FIELDS */}
+                {registerData.role === 'patient' && (
+                    <div className="patient-fields">
+                        <h3 className="section-header">Patient Profile Data</h3>
+                        <div className="form-grid">
+                            <div className="form-group">
+                                <label>Age</label>
+                                <input type="number" name="age" value={registerData.age} onChange={handleRegisterChange} required className="input-field" />
+                            </div>
+                            <div className="form-group">
+                                <label>Gender</label>
+                                <select name="gender" value={registerData.gender} onChange={handleRegisterChange} required className="select-field">
+                                    <option value="">Select Gender</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div className="form-group full-width">
+                                <label>Location/Address</label>
+                                <input type="text" name="location" value={registerData.location} onChange={handleRegisterChange} required className="input-field" />
+                            </div>
+                            <div className="form-group full-width">
+                                <label>Guardian Phone Number</label>
+                                <input type="tel" name="guardian_phone" value={registerData.guardian_phone} onChange={handleRegisterChange} required className="input-field" />
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <button type="submit" className="button button-register" disabled={loading}>
+                    {loading ? 'Registering...' : 'Register Account'}
+                </button>
+            </form>
+            <p className="form-footer">
+                Already have an account? <a href="#" onClick={() => setIsRegistering(false)}>Login</a>
+            </p>
+        </div>
+    );
+
+    return (
+        <div className="login-page-container">
+            <header className="app-header">
+                <h1 className="app-title">MedCare</h1>
+                <p className="app-subtitle">Your AI-Powered Health Companion</p>
+            </header>
+            <main className="login-main">
+                <p className={`status-message ${message.startsWith('Error') ? 'error' : 'success'}`}>{message}</p>
+                {isRegistering ? renderRegisterForm() : renderLoginForm()}
+            </main>
+        </div>
+    );
 }
 
 export default LoginPage;

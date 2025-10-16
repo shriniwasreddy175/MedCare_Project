@@ -208,12 +208,18 @@ def login():
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    """Handles new user registration requests."""
+    """Handles new user registration requests, capturing all patient profile data."""
     data = request.json
+    
+    # 1. Core User Fields (Required for all roles)
     username = data.get('username')
     password = data.get('password')
     role = data.get('role')
-    full_name = data.get('full_name', username) # Assume full name is passed or use username
+    full_name = data.get('full_name')
+    email = data.get('email')
+    
+    if not username or not password or not role or not full_name or not email:
+        return jsonify({"message": "Missing required core fields (Username, Password, Name, Email)."}), 400
 
     if User.query.filter_by(username=username).first():
         return jsonify({"message": "Username already exists."}), 409
@@ -222,15 +228,44 @@ def register():
         return jsonify({"message": "Invalid role specified."}), 400
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
-    new_user = User(username=username, password_hash=hashed_password, role=role, full_name=full_name)
+    
+    # 2. Create User Record
+    new_user = User(
+        username=username, 
+        password_hash=hashed_password, 
+        role=role, 
+        full_name=full_name,
+        email=email # NEW: Save Email
+    )
     db.session.add(new_user)
     db.session.commit()
     
+    # 3. Create Patient Record (Conditional for 'patient' role)
     if role == 'patient':
-        new_patient = Patient(user_id=new_user.id, name=full_name, age=None, gender="N/A", location="N/A")
+        # Patient-specific fields
+        age = data.get('age')
+        gender = data.get('gender')
+        location = data.get('location')
+        guardian_phone = data.get('guardian_phone') # NEW: Retrieve Guardian Phone
+        
+        new_patient = Patient(
+            user_id=new_user.id,
+            name=full_name,
+            age=age,
+            gender=gender,
+            location=location,
+            guardian_phone=guardian_phone # NEW: Save Guardian Phone
+        )
         db.session.add(new_patient)
         
-    db.session.commit()
+        # Create initial VitalsRecord placeholder
+        db.session.add(VitalsRecord(
+            patient_id=new_patient.id,
+            heart_rate="70 bpm", blood_pressure="110/70 mmHg", spo2="97%", 
+            temperature="36.5°C", ecg_status="Normal Rhythm"
+        ))
+        
+        db.session.commit()
 
     return jsonify({"message": f"Registration successful for {full_name} as {role}!"}), 200
 
@@ -243,7 +278,7 @@ def get_vitals():
         'blood_pressure': f"{random.randint(115, 140)}/{random.randint(75, 90)} mmHg",
         'spo2': f"{random.randint(90, 99)}%",
         'temperature': f"{round(random.uniform(36.0, 38.0), 1)}°C",
-        'ecg_status': random.choice(["Normal Rhythm(1200–2800)"]),
+        'ecg_status': random.choice(["Normal Rhythm"]),
         'cortisol': f"{round(random.uniform(10, 20), 1)} mcg/dL",
         'estrogen': f"{random.randint(25, 35)} pg/mL",
         'progesterone': f"{random.randint(4, 6)} ng/mL",

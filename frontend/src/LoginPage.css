@@ -1,0 +1,174 @@
+/* Login Page Styles (Modularized from Inline Styles) */
+
+.login-page-container {
+    min-height: 100vh;
+    background: linear-gradient(to bottom right, #e3f2fd, #bbdefb);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+    font-family: sans-serif;
+    color: #333;
+}
+
+.app-header {
+    width: 100%;
+    max-width: 500px;
+    text-align: center;
+    margin-top: 30px;
+}
+
+.app-title {
+    font-size: 36px;
+    font-weight: 800;
+    color: #1976D2;
+    margin: 0;
+}
+
+.app-subtitle {
+    font-size: 18px;
+    color: #4a5568;
+    margin-bottom: 20px;
+}
+
+.login-main {
+    flex-grow: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding-bottom: 30px;
+}
+
+.auth-box {
+    background-color: #fff;
+    padding: 30px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+.registration-form {
+    padding: 20px;
+    max-width: 650px; /* Wider box for multi-column layout */
+}
+
+.form-title {
+    font-size: 28px;
+    font-weight: bold;
+    color: #1976D2;
+    margin-bottom: 24px;
+}
+
+/* Status Messages */
+.status-message {
+    margin: 15px 0;
+    font-weight: 600;
+}
+.status-message.error {
+    color: #ef4444;
+}
+.status-message.success {
+    color: #10b981;
+}
+
+/* Form Groups and Inputs */
+.form-group {
+    margin-bottom: 15px;
+    text-align: left;
+}
+
+.label-block {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 16px;
+    color: #4a5568;
+    font-weight: 500;
+}
+
+.input-field, .select-field {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e0;
+    border-radius: 8px;
+    font-size: 16px;
+    box-sizing: border-box;
+}
+
+.select-field {
+    appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%234a5568%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E');
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.form-group.full-width {
+    grid-column: span 2;
+}
+
+.section-header {
+    font-size: 18px;
+    color: #1976D2;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 5px;
+    margin-top: 10px;
+    margin-bottom: 15px;
+    grid-column: span 2;
+    text-align: left;
+    font-weight: 600;
+}
+
+/* Buttons */
+.button {
+    width: 100%;
+    padding: 14px;
+    background-color: #1976D2;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.3s ease, opacity 0.3s;
+    margin-top: 20px;
+}
+.button:hover:not(:disabled) {
+    background-color: #1565C0;
+}
+.button:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* Footer Link */
+.form-footer {
+    margin-top: 20px;
+    font-size: 15px;
+}
+.form-footer a {
+    color: #1976D2;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 650px) {
+    .registration-form {
+        max-width: 95%;
+    }
+    .form-grid {
+        grid-template-columns: 1fr; /* Stack columns on smaller screens */
+    }
+    .form-group.full-width, .section-header {
+        grid-column: span 1;
+    }
+}
