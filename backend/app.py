@@ -243,7 +243,7 @@ def get_vitals():
         'blood_pressure': f"{random.randint(115, 140)}/{random.randint(75, 90)} mmHg",
         'spo2': f"{random.randint(90, 99)}%",
         'temperature': f"{round(random.uniform(36.0, 38.0), 1)}°C",
-        'ecg_status': random.choice(["Normal Rhythm", "Sinus Tachycardia", "Irregular Rhythm"]),
+        'ecg_status': random.choice(["Normal Rhythm(1200–2800)"]),
         'cortisol': f"{round(random.uniform(10, 20), 1)} mcg/dL",
         'estrogen': f"{random.randint(25, 35)} pg/mL",
         'progesterone': f"{random.randint(4, 6)} ng/mL",
