@@ -230,16 +230,15 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
-    # 2. Create User Record
+    # 2. Create User Record and ADD IT to the session (NO COMMIT YET)
     new_user = User(
         username=username, 
         password_hash=hashed_password, 
         role=role, 
         full_name=full_name,
-        email=email # NEW: Save Email
+        email=email
     )
     db.session.add(new_user)
-    db.session.commit()
     
     # 3. Create Patient Record (Conditional for 'patient' role)
     if role == 'patient':
@@ -247,28 +246,41 @@ def register():
         age = data.get('age')
         gender = data.get('gender')
         location = data.get('location')
-        guardian_phone = data.get('guardian_phone') # NEW: Retrieve Guardian Phone
+        guardian_phone = data.get('guardian_phone')
         
+        # We must COMMIT the USER first to guarantee we get an ID if Patient depends on it
+        # However, it's safer to commit all at once. Let's rely on relationship autoflush if possible.
+        
+        # *****************************************************************
+        # ** THE NEW, CORRECTED BLOCK **
+        # *****************************************************************
+        
+        # 3a. Create Patient (Which depends on new_user being flushed)
         new_patient = Patient(
-            user_id=new_user.id,
+            user_id=new_user.id, # This relies on SQLAlchemy autogenerating new_user.id during flush
             name=full_name,
             age=age,
             gender=gender,
             location=location,
-            guardian_phone=guardian_phone # NEW: Save Guardian Phone
+            guardian_phone=guardian_phone
         )
         db.session.add(new_patient)
         
-        # Create initial VitalsRecord placeholder
+        # 3b. Create VitalsRecord (Which depends on new_patient being flushed)
         db.session.add(VitalsRecord(
-            patient_id=new_patient.id,
+            patient_id=new_patient.id, # This relies on new_patient.id being available during flush
             heart_rate="70 bpm", blood_pressure="110/70 mmHg", spo2="97%", 
             temperature="36.5°C", ecg_status="Normal Rhythm"
         ))
-        
+    
+    # 4. FINAL COMMIT: Only commit once after all objects are added
+    try:
         db.session.commit()
-
-    return jsonify({"message": f"Registration successful for {full_name} as {role}!"}), 200
+        return jsonify({"message": f"Registration successful for {full_name} as {role}!"}), 200
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database Integrity Error during registration: {e}")
+        return jsonify({"message": "Registration failed due to server error (Database Integrity)."}), 500
 
 @app.route('/api/vitals', methods=['GET'])
 def get_vitals():
