@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 import random
 from datetime import datetime
 import json
+import requests
 
 # Load environment variables from .env file
 load_dotenv()
@@ -437,18 +438,22 @@ def manual_vitals_entry():
 
 @app.route('/api/patients', methods=['GET'])
 def get_patients():
-    """Returns the mock list of patients under care by querying the database."""
+    """
+    Returns the list of patients under care by querying the database, using the LATEST 
+    VitalsRecord entry for status and display.
+    """
     patient_query = Patient.query.all()
     patient_list = []
     
     for patient in patient_query:
+        # Fetch the very latest VitalsRecord for this patient
         latest_vitals = VitalsRecord.query.filter_by(patient_id=patient.id).order_by(VitalsRecord.timestamp.desc()).first()
 
-        # Determine alert status
         is_alert = False
         alert_level = 'none'
         
         if latest_vitals:
+            # 1. Use actual saved data for alert check
             vitals_obj = VitalsMock(
                 heart_rate=latest_vitals.heart_rate,
                 blood_pressure=latest_vitals.blood_pressure,
@@ -460,6 +465,7 @@ def get_patients():
             is_alert = "ALERT" in alert_msg or "WARNING" in alert_msg
             alert_level = 'nurse' if is_alert else 'none'
             
+            # 2. Use actual saved data for frontend display
             patient_vitals_output = {
                 "heartRate": latest_vitals.heart_rate,
                 "bloodPressure": latest_vitals.blood_pressure,
@@ -468,6 +474,7 @@ def get_patients():
             }
             alert_time = latest_vitals.timestamp.strftime("%H:%M")
         else:
+            # Default values if no vitals records exist
             patient_vitals_output = { "heartRate": "N/A", "bloodPressure": "N/A", "spo2": "N/A", "temperature": "N/A" }
             alert_time = "N/A"
 
@@ -481,12 +488,7 @@ def get_patients():
             "alertLevel": alert_level,
             "alertTime": alert_time,
             "isPregnant": patient.is_pregnant,
-            "vitals": {
-                "heartRate": patient_vitals_output["heartRate"],
-                "bloodPressure": patient_vitals_output["bloodPressure"],
-                "spo2": patient_vitals_output["spo2"],
-                "temperature": patient_vitals_output["temperature"]
-            }
+            "vitals": patient_vitals_output # Now using non-random, persistent data
         }
         patient_list.append(patient_data)
         
