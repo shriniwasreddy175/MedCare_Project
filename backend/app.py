@@ -17,7 +17,7 @@ load_dotenv()
 app = Flask(__name__)
 
 # --- Database Configuration ---
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL","sqlite:///medcare.db") 
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv("DATABASE_URL", "sqlite:///medcare.db") 
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['SECRET_KEY'] = os.getenv("SECRET_KEY", "a_very_secret_key_please_change_me") 
 
@@ -29,7 +29,7 @@ migrate = Migrate(app, db)
 CORS(app, resources={r"/api/*": {"origins": [
     "http://localhost:5173", 
     "http://localhost:3000",
-    "https://medcare-frontend-2z67.onrender.com" # Updated production URL
+    "https://medcare-frontend-2z67.onrender.com"
 ]}})
 
 # --- Configure the Gemini API ---
@@ -49,20 +49,21 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     password_hash = db.Column(db.String(128), nullable=False)
     role = db.Column(db.String(20), nullable=False)
-    full_name = db.Column(db.String(100)) # NEW: Added full name column
-    email = db.Column(db.String(120), unique=True, nullable=True) # NEW: Added email column
+    full_name = db.Column(db.String(100))
+    email = db.Column(db.String(120), unique=True, nullable=True) 
     patient_ref = db.relationship('Patient', backref='system_user', uselist=False)
 
 class Patient(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=True) # Made nullable to accommodate non-patient users
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=True, nullable=True)
     name = db.Column(db.String(100), nullable=False)
     age = db.Column(db.Integer)
     gender = db.Column(db.String(10))
     location = db.Column(db.String(50))
     is_pregnant = db.Column(db.Boolean, default=False)
     pregnancy_week = db.Column(db.Integer)
-    guardian_phone = db.Column(db.String(30)) # NEW: Added guardian phone number
+    guardian_phone = db.Column(db.String(30)) 
+    
     vitals = db.relationship('VitalsRecord', backref='patient', lazy='dynamic')
     consultations = db.relationship('Consultation', backref='patient', lazy='dynamic')
 
@@ -86,7 +87,7 @@ class Consultation(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     patient_id = db.Column(db.Integer, db.ForeignKey('patient.id'), nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
-    doctor_name = db.Column(db.String(100)) # Reusing this field to store nurse/doctor name
+    doctor_name = db.Column(db.String(100))
     notes = db.Column(db.Text)
     alert_level = db.Column(db.String(20))
     escalated_by = db.Column(db.String(100))
@@ -94,11 +95,11 @@ class Consultation(db.Model):
 
 # --- Seeding Data and Utility Functions ---
 
-# Mock data for seeding (now includes Patient data)
+# Mock data for seeding
 mock_users_and_patients = {
     "patient1": {"password": "password123", "role": "patient", "full_name": "Patient Alpha", "age": 35, "gender": "Male", "location": "Home"},
-    "doctor1": {"password": "docpass", "role": "doctor", "full_name": "Dr. Smith", "age": 40, "gender": "Male", "location": "Home"},
-    "nurse1": {"password": "nurspass", "role": "nurse", "full_name": "Nurse Jane", "age": 30, "gender": "Female", "location": "Home"},
+    "doctor1": {"password": "docpass", "role": "doctor", "full_name": "Dr. Smith", "age": 40, "gender": "Male", "location": "Hospital A"},
+    "nurse1": {"password": "nurspass", "role": "nurse", "full_name": "Nurse Jane", "age": 30, "gender": "Female", "location": "Clinic B"},
 }
 
 def seed_database():
@@ -110,23 +111,24 @@ def seed_database():
                 username=username, 
                 password_hash=hashed_password, 
                 role=data["role"],
-                full_name=data["full_name"] # NEW: Saving full name
+                full_name=data["full_name"],
+                email=f"{username}@medcare.com"
             )
             db.session.add(new_user)
-            db.session.commit()
-            
+            db.session.commit() # Commit User to get ID
+
             if data['role'] == 'patient':
                 new_patient = Patient(
                     user_id=new_user.id,
-                    name=data['full_name'], # Using full_name as patient record name
+                    name=data['full_name'], 
                     age=data.get('age'),
                     gender=data.get('gender'),
                     location=data.get('location'),
+                    guardian_phone="555-0101"
                 )
                 db.session.add(new_patient)
-                db.session.commit()
-                
-                # Create initial vitals for the patient
+                db.session.commit() # Commit Patient to get ID
+
                 db.session.add(VitalsRecord(
                     patient_id=new_patient.id,
                     heart_rate="75 bpm", blood_pressure="120/80 mmHg", spo2="98%", 
@@ -138,18 +140,14 @@ def seed_database():
 def create_tables_and_seed_data():
     """Create database tables and seed initial user data."""
     with app.app_context():
-        # Check if users exist before seeding
         if not User.query.first():
             seed_database()
         else:
-            # IMPORTANT: For existing DBs, ensure 'full_name' is populated
             for user_data in mock_users_and_patients.values():
                 user = User.query.filter_by(username=user_data['username']).first()
                 if user and not user.full_name:
                     user.full_name = user_data['full_name']
                     db.session.commit()
-            
-            # This is complex in real life, but the key is running migrations/upgrades
             print("Database already contains data. Run migrations if models changed.")
 
 
@@ -158,7 +156,7 @@ class VitalsMock:
         self.__dict__.update(entries)
     
 def check_for_alerts(vitals):
-    # Logic remains the same, adjusted for database model attributes
+    """Analyzes vital signs and returns a consultation message or alert."""
     try:
         hr = int(vitals.heart_rate.split(' ')[0])
         bp_systolic = int(vitals.blood_pressure.split('/')[0])
@@ -194,28 +192,23 @@ def login():
 
     user = User.query.filter_by(username=username).first()
     
-    # Simple mock password check against the seeded password
     mock_password = mock_users_and_patients.get(username, {}).get("password")
 
     if user and bcrypt.check_password_hash(user.password_hash, password):
-        # FIX: Return user's full name upon successful login
         return jsonify({
             "message": "Login successful!", 
             "role": user.role,
-            "name": user.full_name # NEW: Return the full name
+            "name": user.full_name
         }), 200
     else:
         return jsonify({"message": "Invalid username or password."}), 401
 
 @app.route('/api/register', methods=['POST'])
 def register():
-    """
-    Handles new user registration requests, ensuring database integrity by using 
-    object relationships for Foreign Keys.
-    """
+    """Handles new user registration requests, capturing all patient profile data."""
     data = request.json
     
-    # 1. Core User Fields & Validation (No change needed here)
+    # 1. Core User Fields (Required for all roles)
     username = data.get('username')
     password = data.get('password')
     role = data.get('role')
@@ -233,57 +226,54 @@ def register():
 
     hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
     
-    # 2. Create User Record and ADD IT to the session
+    # 2. Create User Record
     new_user = User(
         username=username, 
         password_hash=hashed_password, 
         role=role, 
         full_name=full_name,
-        email=email
+        email=email 
     )
     db.session.add(new_user)
     
-    # 3. Create Patient Record and attach Vitals (Conditional for 'patient' role)
-    if role == 'patient':
-        # Patient-specific fields
-        age = data.get('age')
-        gender = data.get('gender')
-        location = data.get('location')
-        guardian_phone = data.get('guardian_phone')
-        
-        new_patient = Patient(
-            # user_id is automatically handled via relationship established after first flush
-            system_user=new_user, # Attach the User object directly
-            name=full_name,
-            age=age,
-            gender=gender,
-            location=location,
-            guardian_phone=guardian_phone
-        )
-        db.session.add(new_patient)
-        
-        # 4. CREATE VITAL RECORD AND ATTACH IT TO THE PATIENT OBJECT
-        # This is the crucial change that bypasses the manual patient_id assignment
-        initial_vitals = VitalsRecord(
-            heart_rate="70 bpm", blood_pressure="110/70 mmHg", spo2="97%", 
-            temperature="36.5°C", ecg_status="Normal Rhythm"
-        )
-        
-        # This automatically links initial_vitals.patient_id = new_patient.id
-        new_patient.vitals.append(initial_vitals) 
-    
-    # 5. FINAL COMMIT: Only commit once after all related objects are linked
+    # 3. Consolidate creation into a single transaction (Final Fix)
     try:
-        db.session.commit()
+        db.session.flush() # Forces insertion of new_user to get ID before proceeding
+        
+        # 4. Create Patient Record (Conditional for 'patient' role)
+        if role == 'patient':
+            # Patient-specific fields
+            age = data.get('age')
+            gender = data.get('gender')
+            location = data.get('location')
+            guardian_phone = data.get('guardian_phone')
+            
+            new_patient = Patient(
+                user_id=new_user.id, # Now guaranteed to exist after flush
+                name=full_name,
+                age=age,
+                gender=gender,
+                location=location,
+                guardian_phone=guardian_phone
+            )
+            db.session.add(new_patient)
+            db.session.flush() # Force insertion of patient to get ID
+            
+            # Create initial VitalsRecord placeholder
+            initial_vitals = VitalsRecord(
+                patient_id=new_patient.id, # Now guaranteed to exist after patient flush
+                heart_rate="70 bpm", blood_pressure="110/70 mmHg", spo2="97%", 
+                temperature="36.5°C", ecg_status="Normal Rhythm"
+            )
+            db.session.add(initial_vitals)
+            
+        db.session.commit() # FINAL COMMIT
         return jsonify({"message": f"Registration successful for {full_name} as {role}!"}), 200
+
     except Exception as e:
         db.session.rollback()
-        # The NotNullViolation is an Integrity Error, providing better feedback
-        if "NotNullViolation" in str(e):
-             return jsonify({"message": "Registration failed: Missing required patient data or username conflict."}), 500
-
         print(f"Database Integrity Error during registration: {e}")
-        return jsonify({"message": "Registration failed due to unhandled server error."}), 500
+        return jsonify({"message": "Registration failed due to a server error (Database Integrity)."}), 500
 
 @app.route('/api/vitals', methods=['GET'])
 def get_vitals():
@@ -298,7 +288,7 @@ def get_vitals():
         'cortisol': f"{round(random.uniform(10, 20), 1)} mcg/dL",
         'estrogen': f"{random.randint(25, 35)} pg/mL",
         'progesterone': f"{random.randint(4, 6)} ng/mL",
-        'testosterone': f"{random.randint(45, 55)} ng/dL"
+        'testosterone': f"{random.randint(45, 55)} ng/dL",
     }
     
     vitals_obj = VitalsMock(**mock_vitals_data)
@@ -320,7 +310,6 @@ def get_vitals():
     response_data = {"vitals": frontend_vitals, "consultation": consultation_message}
     return jsonify(response_data)
 
-
 @app.route('/api/sos', methods=['POST'])
 def trigger_sos():
     return jsonify({"message": "SOS alert triggered successfully!"}), 200
@@ -328,7 +317,7 @@ def trigger_sos():
 
 @app.route('/api/consult', methods=['POST'])
 def get_consultation():
-    # ... (AI logic remains the same, but uses corrected keys: heartRate -> heart_rate etc. if querying DB)
+    """Handles chatbot requests using Gemini API (if configured) or mock logic."""
     data = request.json
     user_query = data.get('query')
     current_readings = data.get('vitals', {})
@@ -387,7 +376,7 @@ def manual_vitals_entry():
     
     patient_name = data.get('patient_name')
     notes = data.get('notes')
-    nurse_name = data.get('nurse_id', 'Unknown Nurse') # Get nurse name from POST data
+    nurse_name = data.get('nurse_id', 'Unknown Nurse') 
     
     if not patient_name or not data.get('heart_rate'):
         return jsonify({"message": "Missing patient name or vital data."}), 400
@@ -396,32 +385,38 @@ def manual_vitals_entry():
     if not patient:
         return jsonify({"message": f"Patient '{patient_name}' not found in the database. Cannot save record."}), 404
 
-    new_vitals = VitalsRecord(
-        patient_id=patient.id,
-        heart_rate=data.get('heart_rate'),
-        blood_pressure=data.get('blood_pressure'),
-        spo2=data.get('spo2'),
-        temperature=data.get('temperature'),
-        ecg_status="Manual Entry",
-    )
+    # Prepare data for alert check
+    vitals_data_for_check = {
+        'heart_rate': data.get('heart_rate'),
+        'blood_pressure': data.get('blood_pressure'),
+        'spo2': data.get('spo2'),
+        'temperature': data.get('temperature'),
+        'ecg_status': data.get('ecg_status', "Manual Entry"),
+    }
     
-    vitals_obj = VitalsMock(
-        heart_rate=new_vitals.heart_rate,
-        blood_pressure=new_vitals.blood_pressure,
-        spo2=new_vitals.spo2,
-        temperature=new_vitals.temperature,
-        ecg_status=new_vitals.ecg_status
-    )
+    vitals_obj = VitalsMock(**vitals_data_for_check)
     alert_message = check_for_alerts(vitals_obj)
 
     try:
+        new_vitals = VitalsRecord(
+            patient_id=patient.id,
+            heart_rate=vitals_data_for_check['heart_rate'],
+            blood_pressure=vitals_data_for_check['blood_pressure'],
+            spo2=vitals_data_for_check['spo2'],
+            temperature=vitals_data_for_check['temperature'],
+            ecg_status=vitals_data_for_check['ecg_status'],
+            cortisol=data.get('cortisol', "N/A"), 
+            estrogen=data.get('estrogen', "N/A"),
+            progesterone=data.get('progesterone', "N/A"),
+            testosterone=data.get('testosterone', "N/A"),
+        )
         db.session.add(new_vitals)
         
         # Log a consultation entry for the record, including any notes or alerts
         if notes or "ALERT" in alert_message or "WARNING" in alert_message:
             consultation_note = Consultation(
                 patient_id=patient.id,
-                doctor_name=nurse_name, # Storing nurse name here
+                doctor_name=nurse_name, 
                 notes=f"MANUAL VITAL ENTRY by {nurse_name}: {new_vitals.heart_rate}, {new_vitals.blood_pressure}, etc. OBSERVATION: {notes or 'None'}. SYSTEM STATUS: {alert_message}",
                 alert_level='nurse' if "ALERT" in alert_message else 'none',
                 escalated_by=nurse_name
@@ -443,10 +438,10 @@ def manual_vitals_entry():
 @app.route('/api/patients', methods=['GET'])
 def get_patients():
     """Returns the mock list of patients under care by querying the database."""
-    patients = Patient.query.all()
+    patient_query = Patient.query.all()
     patient_list = []
     
-    for patient in patients:
+    for patient in patient_query:
         latest_vitals = VitalsRecord.query.filter_by(patient_id=patient.id).order_by(VitalsRecord.timestamp.desc()).first()
 
         # Determine alert status
@@ -471,25 +466,26 @@ def get_patients():
                 "spo2": latest_vitals.spo2,
                 "temperature": latest_vitals.temperature,
             }
+            alert_time = latest_vitals.timestamp.strftime("%H:%M")
         else:
             patient_vitals_output = { "heartRate": "N/A", "bloodPressure": "N/A", "spo2": "N/A", "temperature": "N/A" }
-
+            alert_time = "N/A"
 
         patient_data = {
             "id": patient.id,
             "name": patient.name,
-            "age": patient.age,
-            "gender": patient.gender,
+            "age": patient.age or 30,
+            "gender": patient.gender or "N/A",
             "location": patient.location,
             "hasAlert": is_alert, 
             "alertLevel": alert_level,
-            "alertTime": latest_vitals.timestamp.strftime("%H:%M") if latest_vitals else "N/A",
+            "alertTime": alert_time,
             "isPregnant": patient.is_pregnant,
             "vitals": {
-                "heartRate": f"{random.randint(60, 110)} bpm",
-                "bloodPressure": f"{random.randint(110, 140)}/{random.randint(70, 90)} mmHg",
-                "spO2": f"{random.randint(95, 99)}%",
-                "temperature": f"{round(random.uniform(36.0, 37.5), 1)}°C"
+                "heartRate": patient_vitals_output["heartRate"],
+                "bloodPressure": patient_vitals_output["bloodPressure"],
+                "spo2": patient_vitals_output["spo2"],
+                "temperature": patient_vitals_output["temperature"]
             }
         }
         patient_list.append(patient_data)
@@ -497,10 +493,48 @@ def get_patients():
     return jsonify(patient_list)
 
 
+@app.route('/api/admin/cleanup', methods=['POST'])
+def cleanup_test_users():
+    # ... (cleanup logic remains the same) ...
+    """
+    Deletes all users from the database except for the initial seeded accounts (patient1, doctor1, nurse1).
+    """
+    protected_usernames = set(mock_users_and_patients.keys())
+    users_to_delete = User.query.filter(User.username.notin_(protected_usernames)).all()
+    deleted_count = 0
+    
+    try:
+        for user in users_to_delete:
+            patient = Patient.query.filter_by(user_id=user.id).first()
+            
+            if patient:
+                patient_id = patient.id
+                
+                # Delete all Vitals/Consultation Records linked to this patient
+                VitalsRecord.query.filter_by(patient_id=patient_id).delete(synchronize_session=False)
+                Consultation.query.filter_by(patient_id=patient_id).delete(synchronize_session=False)
+                
+                db.session.delete(patient)
+            
+            db.session.delete(user)
+            deleted_count += 1
+            
+        db.session.commit()
+        
+        return jsonify({
+            "message": f"Successfully cleaned up {deleted_count} test user(s). Only seeded accounts remain.",
+            "deleted_count": deleted_count
+        }), 200
+    
+    except Exception as e:
+        db.session.rollback()
+        print(f"Cleanup failed: {e}")
+        return jsonify({"message": "Database cleanup failed due to an internal error."}), 500
+
+
 # Run the Flask app
 if __name__ == '__main__':
     with app.app_context():
-        # NOTE: You must run 'flask db upgrade' first to create the 'full_name' column
         if not User.query.first():
             seed_database()
             print("Database seeded.")

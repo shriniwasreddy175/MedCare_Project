@@ -1,0 +1,19 @@
+ IoT Devices (ESP32, sensors)
+        |
+        v
+   Backend API (Flask)
+   ----------------------------------
+   Deployed on: Render
+   URL: https://medcare-api-i5cm.onrender.com
+        |
+        v
+   Database (PostgreSQL)
+        |
+        v
+   Frontend (Next.js / React)
+   ----------------------------------
+   Deployed on: Render
+   URL: https://medcare-frontend-2z67.onrender.com
+        |
+        v
+   Users (Patient, Doctor, Nurse, Admin) + Chatbot (Gemini API)
