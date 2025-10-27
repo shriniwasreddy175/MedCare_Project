@@ -435,6 +435,61 @@ def manual_vitals_entry():
         print(f"Database error during manual entry: {e}")
         return jsonify({"message": "Server error while saving data."}), 500
 
+# --- NEW API ROUTE: LIVE ARDUINO VITAL INGESTION ---
+@app.route('/api/vitals/live', methods=['POST'])
+def live_vitals_ingestion():
+    """
+    Receives raw vital sign data directly from the Arduino/ESP device and saves it.
+    The device is assumed to send data for a known patient ID.
+    """
+    data = request.json
+    
+    # CRITICAL: We need a reliable ID to link the data to the patient.
+    patient_id = data.get('patient_id') 
+    
+    if not patient_id:
+        return jsonify({"message": "Missing patient ID."}), 400
+
+    # 1. Find the Patient record using the provided ID
+    # Use .get() for safer lookup that returns None if ID doesn't exist
+    patient = Patient.query.get(patient_id) 
+    if not patient:
+        return jsonify({"message": f"Patient ID {patient_id} not found."}), 404
+
+    # 2. Create the Vitals Record object using keys expected from Arduino
+    # (e.g., 'hr', 'bp', 'spo2_val', 'temp_val')
+    new_vitals = VitalsRecord(
+        patient_id=patient.id,
+        heart_rate=data.get('hr'),
+        blood_pressure=data.get('bp'),
+        spo2=data.get('spo2_val'),
+        temperature=data.get('temp_val'),
+        ecg_status=data.get('ecg_status', 'Device Stream'),
+        # Add other sensor data here as needed, ensuring keys match Arduino JSON
+    )
+    
+    # 3. Save to database
+    try:
+        db.session.add(new_vitals)
+        
+        # Optionally log a simplified consultation entry for the device stream
+        db.session.add(Consultation(
+            patient_id=patient.id,
+            doctor_name="Device Stream", 
+            notes=f"AUTOMATED STREAM: HR={new_vitals.heart_rate}, BP={new_vitals.blood_pressure}",
+            alert_level='low', # Default alert level for raw stream
+            escalated_by='System'
+        ))
+        
+        db.session.commit()
+        
+        # A simple success message for the device to receive
+        return jsonify({"message": "Vitals successfully logged."}), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database error during live ingestion: {e}")
+        return jsonify({"message": "Server error while saving live vitals."}), 500
 
 @app.route('/api/patients', methods=['GET'])
 def get_patients():
