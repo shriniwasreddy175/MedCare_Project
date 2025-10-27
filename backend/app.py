@@ -549,6 +549,58 @@ def get_patients():
         
     return jsonify(patient_list)
 
+# --- NEW API ROUTE: DETAILED PATIENT EMR DATA ---
+@app.route('/api/patient/<int:patient_id>/details', methods=['GET'])
+def get_patient_details(patient_id):
+    """
+    Fetches comprehensive data for a single patient, including demographics, 
+    recent vitals history for charting, and full consultation history.
+    """
+    
+    # 1. Fetch the core Patient record
+    patient = Patient.query.get_or_404(patient_id) # Returns 404 if patient ID not found
+    
+    # 2. Fetch Vitals History (e.g., last 30 records for charts)
+    vitals_history_query = VitalsRecord.query.filter_by(patient_id=patient.id).order_by(VitalsRecord.timestamp.desc()).limit(30).all()
+    
+    # Format vitals history for easy charting on the frontend
+    vitals_history_formatted = {
+        "dates": [v.timestamp.strftime("%Y-%m-%d %H:%M") for v in reversed(vitals_history_query)],
+        "heartRate": [int(v.heart_rate.split(' ')[0]) if v.heart_rate and ' ' in v.heart_rate else None for v in reversed(vitals_history_query)],
+        "systolic": [int(v.blood_pressure.split('/')[0]) if v.blood_pressure and '/' in v.blood_pressure else None for v in reversed(vitals_history_query)],
+        "diastolic": [int(v.blood_pressure.split('/')[1].split(' ')[0]) if v.blood_pressure and '/' in v.blood_pressure else None for v in reversed(vitals_history_query)],
+        "spo2": [float(v.spo2.split('%')[0]) if v.spo2 and '%' in v.spo2 else None for v in reversed(vitals_history_query)],
+        "temperature": [float(v.temperature.split('°')[0]) if v.temperature and '°' in v.temperature else None for v in reversed(vitals_history_query)],
+    }
+    
+    # 3. Fetch ALL Consultation History
+    consultations_query = Consultation.query.filter_by(patient_id=patient.id).order_by(Consultation.timestamp.desc()).all()
+    
+    consultations_formatted = [{
+        "date": c.timestamp.strftime("%Y-%m-%d %H:%M"),
+        "doctor": c.doctor_name,
+        "notes": c.notes,
+        "alertLevel": c.alert_level,
+        "escalatedBy": c.escalated_by
+    } for c in consultations_query]
+    
+    # 4. Construct the final JSON response
+    response_data = {
+        "patient": {
+            "id": patient.id,
+            "name": patient.name,
+            "age": patient.age,
+            "gender": patient.gender,
+            "location": patient.location,
+            "isPregnant": patient.is_pregnant,
+            "pregnancyWeek": patient.pregnancy_week,
+            "guardianPhone": patient.guardian_phone
+        },
+        "vitals_history": vitals_history_formatted,
+        "consultations": consultations_formatted
+    }
+    
+    return jsonify(response_data)
 
 @app.route('/api/admin/cleanup', methods=['POST'])
 def cleanup_test_users():

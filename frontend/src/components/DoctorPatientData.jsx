@@ -8,43 +8,31 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, T
 
 const API_URL = 'https://medcare-api-i5cm.onrender.com/api';
 
-// Mock historical data structure for chart visualization
-const MOCK_HISTORY = {
-    dates: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    heartRate: [82, 85, 84, 86, 88, 85, 87],
-    systolic: [130, 132, 135, 131, 134, 135, 138],
-    diastolic: [82, 84, 85, 83, 86, 85, 89],
-};
-
-const MOCK_CONSULTATIONS = [
-    { date: '2025-05-15', doctor: 'Dr. R. Smith', message: 'Vitals trending high. Advised reduced activity and low sodium diet. Follow-up scheduled.' },
-    { date: '2025-05-10', doctor: 'Dr. R. Smith', message: 'Patient check-in, reported mild fatigue. Vitals stable. Recommended vitamin supplements.' }
-];
-
 // Component for the comprehensive, detailed patient record
 export default function DoctorPatientData({ patientId, onBack }) {
-    const [patient, setPatient] = useState(null);
+    // State now holds the entire structured response from the API
+    const [patientData, setPatientData] = useState(null); 
     const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState(null); // Added error state
     
-    // NOTE: In a real application, MOCK_HISTORY and MOCK_CONSULTATIONS would be fetched from the API
-
     const fetchPatientDetails = useCallback(async () => {
         setIsLoading(true);
+        setError(null); // Clear previous errors
         try {
-            // Placeholder: In a full implementation, this route would fetch all history and demographics
-            const response = await fetch(`${API_URL}/patients`); 
-            const patientList = await response.json();
-            const selectedPatient = patientList.find(p => p.id === patientId);
-
-            if (selectedPatient) {
-                // Attach mock data for charts/history until the backend serves it
-                selectedPatient.history = MOCK_HISTORY; 
-                selectedPatient.consultations = MOCK_CONSULTATIONS;
-                setPatient(selectedPatient);
+            // UPDATED: Call the new dedicated endpoint
+            const response = await fetch(`${API_URL}/patient/${patientId}/details`); 
+            
+            if (!response.ok) {
+                throw new Error(`Failed to fetch patient details (Status: ${response.status})`);
             }
-        } catch (error) {
-            console.error("Error fetching patient details:", error);
-            setPatient(null);
+            
+            const data = await response.json();
+            setPatientData(data); // Store the full response object { patient, vitals_history, consultations }
+
+        } catch (err) {
+            console.error("Error fetching patient details:", err);
+            setError(err.message || "Could not load patient record.");
+            setPatientData(null);
         } finally {
             setIsLoading(false);
         }
@@ -59,16 +47,22 @@ export default function DoctorPatientData({ patientId, onBack }) {
         responsive: true,
         plugins: {
             legend: { position: 'top' },
-            title: { display: false },
+            title: { display: false }, // Keep title minimal in chart area
         },
+        scales: {
+            y: { // Ensure y-axis starts appropriately
+                beginAtZero: false 
+            }
+        }
     };
 
+    // Chart data now dynamically uses the fetched history
     const heartRateChartData = {
-        labels: MOCK_HISTORY.dates,
+        labels: patientData?.vitals_history?.dates || [], // Use optional chaining
         datasets: [
             {
                 label: 'Heart Rate (bpm)',
-                data: MOCK_HISTORY.heartRate,
+                data: patientData?.vitals_history?.heartRate || [],
                 borderColor: 'rgb(255, 99, 132)',
                 backgroundColor: 'rgba(255, 99, 132, 0.5)',
                 tension: 0.4,
@@ -77,18 +71,18 @@ export default function DoctorPatientData({ patientId, onBack }) {
     };
 
     const bloodPressureChartData = {
-        labels: MOCK_HISTORY.dates,
+        labels: patientData?.vitals_history?.dates || [],
         datasets: [
             {
                 label: 'Systolic (mmHg)',
-                data: MOCK_HISTORY.systolic,
+                data: patientData?.vitals_history?.systolic || [],
                 borderColor: 'rgb(53, 162, 235)',
                 backgroundColor: 'rgba(53, 162, 235, 0.5)',
                 tension: 0.4,
             },
             {
                 label: 'Diastolic (mmHg)',
-                data: MOCK_HISTORY.diastolic,
+                data: patientData?.vitals_history?.diastolic || [],
                 borderColor: 'rgb(75, 192, 192)',
                 backgroundColor: 'rgba(75, 192, 192, 0.5)',
                 tension: 0.4,
@@ -96,12 +90,19 @@ export default function DoctorPatientData({ patientId, onBack }) {
         ],
     };
 
+    // --- Render Logic ---
     if (isLoading) {
         return <div className="loading-message">Loading comprehensive patient record...</div>;
     }
-    if (!patient) {
-        return <div className="error-message">Patient record not found. ID: {patientId}</div>;
+    if (error) {
+        return <div className="error-message">Error: {error}</div>;
     }
+    if (!patientData || !patientData.patient) { // Check if patient data structure is valid
+        return <div className="error-message">Patient record not found or data structure is invalid. ID: {patientId}</div>;
+    }
+
+    // Destructure for easier access
+    const { patient, vitals_history, consultations } = patientData;
 
     return (
         <div className="patient-record-container">
@@ -111,36 +112,37 @@ export default function DoctorPatientData({ patientId, onBack }) {
                     <ChevronLeft size={20} /> Back to Triage Dashboard
                 </button>
                 <h1 className="record-title">Comprehensive Patient Record: {patient.name}</h1>
-                <p className="record-meta">ID: {patient.id} | Age: {patient.age} | Location: {patient.location}</p>
+                <p className="record-meta">ID: {patient.id} | Age: {patient.age} | Gender: {patient.gender} | Location: {patient.location}</p>
+                 {patient.guardianPhone && <p className="record-meta guardian-phone">Guardian Contact: {patient.guardianPhone}</p>}
             </div>
 
-            {/* Current Vitals Snapshot */}
+            {/* Current Vitals Snapshot - Fetch latest from history if possible, else use patient.vitals */}
             <div className="data-section-title">Latest Vitals Snapshot</div>
             <div className="vitals-summary-grid">
                 <div className="summary-card status-red">
                     <Heart size={24} />
-                    <span className="summary-value">{patient.vitals.heartRate}</span>
+                    <span className="summary-value">{vitals_history?.heartRate?.slice(-1)[0] || 'N/A'} bpm</span>
                     <span className="summary-label">Heart Rate</span>
                 </div>
                 <div className="summary-card status-blue">
                     <Activity size={24} />
-                    <span className="summary-value">{patient.vitals.bloodPressure}</span>
+                    <span className="summary-value">{vitals_history?.systolic?.slice(-1)[0]}/{vitals_history?.diastolic?.slice(-1)[0] || 'N/A'} mmHg</span>
                     <span className="summary-label">Blood Pressure</span>
                 </div>
-                <div className="summary-card status-cyan">
+                 <div className="summary-card status-cyan">
                     <Droplets size={24} />
-                    <span className="summary-value">{patient.vitals.spo2}</span>
+                    <span className="summary-value">{vitals_history?.spo2?.slice(-1)[0] || 'N/A'}%</span>
                     <span className="summary-label">SpO2</span>
                 </div>
                 <div className="summary-card status-orange">
                     <Thermometer size={24} />
-                    <span className="summary-value">{patient.vitals.temperature}</span>
+                    <span className="summary-value">{vitals_history?.temperature?.slice(-1)[0] || 'N/A'}°C</span>
                     <span className="summary-label">Temperature</span>
                 </div>
             </div>
 
             {/* Trend Charts */}
-            <div className="data-section-title">Vitals Trend Analysis (Last 7 Days)</div>
+            <div className="data-section-title">Vitals Trend Analysis (Recent Records)</div>
             <div className="chart-analysis-grid">
                 <div className="chart-card">
                     <h3 className="chart-card-title">Heart Rate Trend</h3>
@@ -155,15 +157,16 @@ export default function DoctorPatientData({ patientId, onBack }) {
             {/* Consultation History */}
             <div className="data-section-title">Consultation & EMR History</div>
             <div className="consultation-history-list">
-                {patient.consultations && patient.consultations.length > 0 ? (
-                    patient.consultations.map((entry, index) => (
+                {consultations && consultations.length > 0 ? (
+                    consultations.map((entry, index) => (
                         <div key={index} className="consultation-entry">
                             <div className="consultation-meta">
                                 <Calendar size={16} />
                                 <p className="consultation-date">{entry.date}</p>
-                                <p className="consultation-doctor">Attending: {entry.doctor}</p>
+                                <p className="consultation-doctor">Logged By: {entry.doctor}</p>
+                                {entry.escalatedBy && <p className="escalated-by-tag">Escalated By: {entry.escalatedBy}</p>}
                             </div>
-                            <p className="consultation-message">{entry.message}</p>
+                            <p className="consultation-message">{entry.notes}</p>
                         </div>
                     ))
                 ) : (
@@ -173,3 +176,4 @@ export default function DoctorPatientData({ patientId, onBack }) {
         </div>
     );
 }
+
