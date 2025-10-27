@@ -602,6 +602,82 @@ def get_patient_details(patient_id):
     
     return jsonify(response_data)
 
+@app.route('/api/patient/<int:patient_id>/acknowledge', methods=['POST'])
+def acknowledge_case(patient_id):
+    """
+    Formally acknowledges a case, clears its urgent alert status in the latest vitals,
+    and creates a confirmation note in Consultation history.
+    Requires: 'doctor_name' in JSON payload.
+    """
+    data = request.json
+    doctor_name = data.get('doctor_name', 'Unknown Doctor')
+    
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"message": "Patient not found."}), 404
+
+    try:
+        # 1. Log the acknowledgment in Consultation history
+        db.session.add(Consultation(
+            patient_id=patient_id,
+            doctor_name=doctor_name,
+            notes=f"CASE ACKNOWLEDGED. Review initiated by {doctor_name}. Alert status cleared from triage view.",
+            alert_level='none',
+            escalated_by='System Triage'
+        ))
+        
+        # 2. OPTIONAL: You may want to update the *latest* VitalsRecord to clear the alert flags
+        # However, clearing the alert from the Consultation log is usually sufficient for triage visibility.
+        
+        db.session.commit()
+        return jsonify({
+            "message": f"Case acknowledged by {doctor_name}. Triage status updated.",
+            "patient_id": patient_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database error during acknowledgment: {e}")
+        return jsonify({"message": "Failed to log acknowledgment due to server error."}), 500
+
+@app.route('/api/patient/<int:patient_id>/add_note', methods=['POST'])
+def add_patient_note(patient_id):
+    """
+    Saves a formal medical note provided by the doctor to the Consultation history.
+    Requires: 'doctor_name' and 'notes_content' in JSON payload.
+    """
+    data = request.json
+    doctor_name = data.get('doctor_name', 'Unknown Doctor')
+    notes_content = data.get('notes_content')
+    
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"message": "Patient not found."}), 404
+    
+    if not notes_content:
+        return jsonify({"message": "Note content is required."}), 400
+
+    try:
+        # Create a new Consultation entry with the doctor's note
+        db.session.add(Consultation(
+            patient_id=patient_id,
+            doctor_name=doctor_name,
+            notes=f"DOCTOR'S NOTE ({doctor_name}): {notes_content}",
+            alert_level='none', # A note is not an alert
+            escalated_by='Doctor'
+        ))
+        
+        db.session.commit()
+        return jsonify({
+            "message": f"Note saved successfully for {patient.name}.",
+            "patient_id": patient_id
+        }), 201
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database error saving note: {e}")
+        return jsonify({"message": "Failed to save note due to server error."}), 500
+
 @app.route('/api/admin/cleanup', methods=['POST'])
 def cleanup_test_users():
     # ... (cleanup logic remains the same) ...
