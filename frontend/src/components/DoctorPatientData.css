@@ -1,4 +1,5 @@
-/* DoctorPatientData.css - Styles for the Comprehensive Patient Record View */
+/* DoctorPatientData.css */
+/* Styles for the Comprehensive Patient Record View */
 
 .patient-record-container {
     max-width: 100%;
@@ -27,6 +28,7 @@
     gap: 8px;
     margin-bottom: 12px;
     transition: background-color 0.2s;
+    font-weight: 600;
 }
 
 .back-button:hover {
@@ -44,6 +46,11 @@
     font-size: 14px;
     color: #718096;
     margin-top: 4px;
+}
+
+.guardian-phone {
+    color: #4CAF50; /* Doctor Green */
+    font-weight: 600;
 }
 
 .data-section-title {
@@ -135,6 +142,7 @@
 .consultation-meta {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 8px;
     font-size: 14px;
@@ -143,11 +151,20 @@
 
 .consultation-date { font-weight: bold; }
 .consultation-doctor { font-style: italic; }
+.escalated-by-tag {
+    font-weight: 600;
+    color: #dd2c00;
+    background-color: #ffebee;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+}
 
 .consultation-message {
     margin: 0;
     line-height: 1.6;
     color: #2d3748;
+    white-space: pre-wrap; /* Preserves formatting from notes */
 }
 
 .empty-history, .loading-message, .error-message {
@@ -155,6 +172,13 @@
     padding: 40px;
     color: #718096;
     font-style: italic;
+}
+
+.error-message {
+    color: #c53030;
+    background-color: #fef2f2;
+    border: 1px solid #fbb6ce;
+    border-radius: 8px;
 }
 
 /* Responsive adjustments */

@@ -283,34 +283,62 @@ def register():
 
 @app.route('/api/vitals', methods=['GET'])
 def get_vitals():
-    """Returns current vital signs data."""
-    # Logic remains the same, mock vitals structure used for immediate response
-    mock_vitals_data = {
-        'heart_rate': f"{random.randint(68, 110)} bpm",
-        'blood_pressure': f"{random.randint(115, 140)}/{random.randint(75, 90)} mmHg",
-        'spo2': f"{random.randint(90, 99)}%",
-        'temperature': f"{round(random.uniform(36.0, 38.0), 1)}°C",
-        'ecg_status': random.choice(["Normal Rhythm"]),
-        'cortisol': f"{round(random.uniform(10, 20), 1)} mcg/dL",
-        'estrogen': f"{random.randint(25, 35)} pg/mL",
-        'progesterone': f"{random.randint(4, 6)} ng/mL",
-        'testosterone': f"{random.randint(45, 55)} ng/dL",
-    }
+    """
+    Returns the current vital signs data for Patient Alpha (ID 1).
+    Data is persistent if found in the DB, or shows 'N/A' if the device hasn't logged data yet.
+    """
     
-    vitals_obj = VitalsMock(**mock_vitals_data)
-    consultation_message = check_for_alerts(vitals_obj)
+    # NOTE: In a production app, this ID would be determined by the logged-in user.
+    patient_alpha_id = 1 
+    latest_vitals = VitalsRecord.query.filter_by(patient_id=patient_alpha_id).order_by(VitalsRecord.timestamp.desc()).first()
 
-    # Format the keys to match the frontend
+    if latest_vitals:
+        # Data found in DB (Either Manual Entry or Live Stream)
+        vitals_data = {
+            'heart_rate': latest_vitals.heart_rate,
+            'blood_pressure': latest_vitals.blood_pressure,
+            'spo2': latest_vitals.spo2,
+            'temperature': latest_vitals.temperature,
+            'ecg_status': latest_vitals.ecg_status or "Normal Rhythm",
+            'cortisol': latest_vitals.cortisol or "N/A",
+            'estrogen': latest_vitals.estrogen or "N/A",
+            'progesterone': latest_vitals.progesterone or "N/A",
+            'testosterone': latest_vitals.testosterone or "N/A",
+        }
+    else:
+        # Data not found (New user, or device not yet connected)
+        vitals_data = {
+            'heart_rate': "N/A", 
+            'blood_pressure': "N/A", 
+            'spo2': "N/A", 
+            'temperature': "N/A",
+            'ecg_status': "Device Not Connected", # CLEAR STATUS FOR FRONTEND
+            'cortisol': "-- mcg/dL",
+            'estrogen': "-- pg/mL",
+            'progesterone': "-- ng/mL",
+            'testosterone': "-- ng/dL",
+        }
+    
+    # Check for alerts using the determined data
+    vitals_obj = VitalsMock(**vitals_data)
+    consultation_message = check_for_alerts(vitals_obj)
+    
+    # Check for the initial "Not Connected" status to override general message
+    if vitals_data['ecg_status'] == "Device Not Connected":
+         consultation_message = "Status: Device is offline. Waiting for first data stream."
+
+
+    # Format the keys to match the frontend (e.g., heart_rate -> heartRate)
     frontend_vitals = {
-        'heartRate': mock_vitals_data['heart_rate'],
-        'bloodPressure': mock_vitals_data['blood_pressure'],
-        'spo2': mock_vitals_data['spo2'],
-        'temperature': mock_vitals_data['temperature'],
-        'ecgStatus': mock_vitals_data['ecg_status'],
-        'cortisol': mock_vitals_data['cortisol'],
-        'estrogen': mock_vitals_data['estrogen'],
-        'progesterone': mock_vitals_data['progesterone'],
-        'testosterone': mock_vitals_data['testosterone'],
+        'heartRate': vitals_data['heart_rate'],
+        'bloodPressure': vitals_data['blood_pressure'],
+        'spo2': vitals_data['spo2'],
+        'temperature': vitals_data['temperature'],
+        'ecgStatus': vitals_data['ecg_status'],
+        'cortisol': vitals_data['cortisol'],
+        'estrogen': vitals_data['estrogen'],
+        'progesterone': vitals_data['progesterone'],
+        'testosterone': vitals_data['testosterone'],
     }
     
     response_data = {"vitals": frontend_vitals, "consultation": consultation_message}
