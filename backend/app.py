@@ -95,8 +95,6 @@ class Consultation(db.Model):
     
 
 # --- Seeding Data and Utility Functions ---
-
-# Mock data for seeding
 mock_users_and_patients = {
     "patient1": {"password": "password123", "role": "patient", "full_name": "Patient Alpha", "age": 35, "gender": "Male", "location": "Home"},
     "doctor1": {"password": "docpass", "role": "doctor", "full_name": "Dr. Smith", "age": 40, "gender": "Male", "location": "Hospital A"},
@@ -116,7 +114,7 @@ def seed_database():
                 email=f"{username}@medcare.com"
             )
             db.session.add(new_user)
-            db.session.commit() # Commit User to get ID
+            db.session.commit() 
 
             if data['role'] == 'patient':
                 new_patient = Patient(
@@ -128,7 +126,7 @@ def seed_database():
                     guardian_phone="555-0101"
                 )
                 db.session.add(new_patient)
-                db.session.commit() # Commit Patient to get ID
+                db.session.commit() 
 
                 db.session.add(VitalsRecord(
                     patient_id=new_patient.id,
@@ -193,13 +191,20 @@ def login():
 
     user = User.query.filter_by(username=username).first()
     
-    mock_password = mock_users_and_patients.get(username, {}).get("password")
-
     if user and bcrypt.check_password_hash(user.password_hash, password):
+        
+        patient_id = None
+        # NEW: If the user is a patient, find their linked patient record ID
+        if user.role == 'patient':
+            patient = Patient.query.filter_by(user_id=user.id).first()
+            if patient:
+                patient_id = patient.id
+
         return jsonify({
             "message": "Login successful!", 
             "role": user.role,
-            "name": user.full_name
+            "name": user.full_name,
+            "patient_id": patient_id  # FIX: Send patient_id to the frontend
         }), 200
     else:
         return jsonify({"message": "Invalid username or password."}), 401
@@ -295,7 +300,7 @@ def get_vitals():
     vitals_obj = VitalsMock(**mock_vitals_data)
     consultation_message = check_for_alerts(vitals_obj)
 
-    # Format the keys to match the frontend (e.g., heart_rate -> heartRate)
+    # Format the keys to match the frontend
     frontend_vitals = {
         'heartRate': mock_vitals_data['heart_rate'],
         'bloodPressure': mock_vitals_data['blood_pressure'],
@@ -311,10 +316,47 @@ def get_vitals():
     response_data = {"vitals": frontend_vitals, "consultation": consultation_message}
     return jsonify(response_data)
 
+
 @app.route('/api/sos', methods=['POST'])
 def trigger_sos():
-    return jsonify({"message": "SOS alert triggered successfully!"}), 200
+    """
+    Triggers an SOS alert.
+    Receives a patient_id, finds their record, and returns critical contact info.
+    """
+    data = request.json
+    patient_id_raw = data.get('patientId')
 
+    if not patient_id_raw:
+        return jsonify({"message": "SOS Failed: No patient ID provided."}), 400
+
+    try:
+        # CRITICAL FIX: Cast the incoming ID (which might be a string) to an integer
+        patient_id = int(patient_id_raw)
+    except (TypeError, ValueError):
+        return jsonify({"message": "SOS Failed: Invalid patient ID format."}), 400
+
+    # Look up patient by integer ID
+    patient = Patient.query.get(patient_id) 
+
+    if not patient:
+        return jsonify({"message": f"SOS Failed: Patient record {patient_id} not found."}), 404
+        
+    # Log this SOS as a critical consultation entry
+    sos_note = Consultation(
+        patient_id=patient.id,
+        doctor_name="SOS System",
+        notes=f"SOS ALERT TRIGGERED by user. Guardian Contact: {patient.guardian_phone}. Location: {patient.location}.",
+        alert_level='doctor', 
+        escalated_by='Patient SOS'
+    )
+    db.session.add(sos_note)
+    db.session.commit()
+
+    return jsonify({
+        "message": "SOS Alert Triggered! Medical staff and guardian have been notified.",
+        "guardian_phone": patient.guardian_phone,
+        "patient_location": patient.location
+    }), 200
 
 @app.route('/api/consult', methods=['POST'])
 def get_consultation():
@@ -345,7 +387,6 @@ def get_consultation():
     If user asks for medical advice, remind them you are not a doctor and suggest consulting a healthcare professional.
 
     Please provide a concise, empathetic, and professional response.
-
     """
     ai_response = "AI Mock Response: Based on your input, please consult a healthcare professional for personalized advice."
     if model:
@@ -440,24 +481,18 @@ def manual_vitals_entry():
 def live_vitals_ingestion():
     """
     Receives raw vital sign data directly from the Arduino/ESP device and saves it.
-    The device is assumed to send data for a known patient ID.
     """
     data = request.json
     
-    # CRITICAL: We need a reliable ID to link the data to the patient.
     patient_id = data.get('patient_id') 
     
     if not patient_id:
         return jsonify({"message": "Missing patient ID."}), 400
 
-    # 1. Find the Patient record using the provided ID
-    # Use .get() for safer lookup that returns None if ID doesn't exist
     patient = Patient.query.get(patient_id) 
     if not patient:
         return jsonify({"message": f"Patient ID {patient_id} not found."}), 404
 
-    # 2. Create the Vitals Record object using keys expected from Arduino
-    # (e.g., 'hr', 'bp', 'spo2_val', 'temp_val')
     new_vitals = VitalsRecord(
         patient_id=patient.id,
         heart_rate=data.get('hr'),
@@ -465,25 +500,21 @@ def live_vitals_ingestion():
         spo2=data.get('spo2_val'),
         temperature=data.get('temp_val'),
         ecg_status=data.get('ecg_status', 'Device Stream'),
-        # Add other sensor data here as needed, ensuring keys match Arduino JSON
     )
     
-    # 3. Save to database
     try:
         db.session.add(new_vitals)
         
-        # Optionally log a simplified consultation entry for the device stream
         db.session.add(Consultation(
             patient_id=patient.id,
             doctor_name="Device Stream", 
             notes=f"AUTOMATED STREAM: HR={new_vitals.heart_rate}, BP={new_vitals.blood_pressure}",
-            alert_level='low', # Default alert level for raw stream
+            alert_level='low', 
             escalated_by='System'
         ))
         
         db.session.commit()
         
-        # A simple success message for the device to receive
         return jsonify({"message": "Vitals successfully logged."}), 201
 
     except Exception as e:
@@ -501,14 +532,12 @@ def get_patients():
     patient_list = []
     
     for patient in patient_query:
-        # Fetch the very latest VitalsRecord for this patient
         latest_vitals = VitalsRecord.query.filter_by(patient_id=patient.id).order_by(VitalsRecord.timestamp.desc()).first()
 
         is_alert = False
         alert_level = 'none'
         
         if latest_vitals:
-            # 1. Use actual saved data for alert check
             vitals_obj = VitalsMock(
                 heart_rate=latest_vitals.heart_rate,
                 blood_pressure=latest_vitals.blood_pressure,
@@ -520,7 +549,6 @@ def get_patients():
             is_alert = "ALERT" in alert_msg or "WARNING" in alert_msg
             alert_level = 'nurse' if is_alert else 'none'
             
-            # 2. Use actual saved data for frontend display
             patient_vitals_output = {
                 "heartRate": latest_vitals.heart_rate,
                 "bloodPressure": latest_vitals.blood_pressure,
@@ -529,7 +557,6 @@ def get_patients():
             }
             alert_time = latest_vitals.timestamp.strftime("%H:%M")
         else:
-            # Default values if no vitals records exist
             patient_vitals_output = { "heartRate": "N/A", "bloodPressure": "N/A", "spo2": "N/A", "temperature": "N/A" }
             alert_time = "N/A"
 
@@ -543,13 +570,12 @@ def get_patients():
             "alertLevel": alert_level,
             "alertTime": alert_time,
             "isPregnant": patient.is_pregnant,
-            "vitals": patient_vitals_output # Now using non-random, persistent data
+            "vitals": patient_vitals_output 
         }
         patient_list.append(patient_data)
         
     return jsonify(patient_list)
 
-# --- NEW API ROUTE: DETAILED PATIENT EMR DATA ---
 @app.route('/api/patient/<int:patient_id>/details', methods=['GET'])
 def get_patient_details(patient_id):
     """
@@ -627,7 +653,6 @@ def acknowledge_case(patient_id):
         ))
         
         # 2. OPTIONAL: You may want to update the *latest* VitalsRecord to clear the alert flags
-        # However, clearing the alert from the Consultation log is usually sufficient for triage visibility.
         
         db.session.commit()
         return jsonify({
@@ -678,9 +703,9 @@ def add_patient_note(patient_id):
         print(f"Database error saving note: {e}")
         return jsonify({"message": "Failed to save note due to server error."}), 500
 
+
 @app.route('/api/admin/cleanup', methods=['POST'])
 def cleanup_test_users():
-    # ... (cleanup logic remains the same) ...
     """
     Deletes all users from the database except for the initial seeded accounts (patient1, doctor1, nurse1).
     """

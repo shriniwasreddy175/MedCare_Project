@@ -10,7 +10,8 @@ import './App.css'; // Global Styles
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState(null);
-  const [userName, setUserName] = useState(null); // NEW STATE: Store user's full name
+  const [userName, setUserName] = useState(null); 
+  const [patientId, setPatientId] = useState(null); // 1. ADD STATE FOR PATIENT ID
   const [currentView, setCurrentView] = useState('dashboard');
 
   const [vitals, setVitals] = useState({
@@ -27,7 +28,7 @@ function App() {
   const [consultationMessage, setConsultationMessage] = useState("Fetching health status...");
   const [chatbotMessages, setChatbotMessages] = useState([]);
 
-  const API_URL = 'https://medcare-api-i5cm.onrender.com/api'; // Using live API URL
+  const API_URL = 'https://medcare-api-i5cm.onrender.com/api';
 
   const fetchVitals = useCallback(async () => {
     if (!isLoggedIn) return;
@@ -52,20 +53,32 @@ function App() {
   }, [isLoggedIn, userRole, fetchVitals]);
 
   const triggerSOS = async () => {
-    if (!isLoggedIn) { alert("Please log in to trigger SOS."); return; }
+    // Check patientId existence
+    if (!isLoggedIn || !patientId) { 
+        alert("SOS Error: You must be logged in as a patient to trigger SOS."); 
+        return; 
+    }
+    
     try {
       const response = await fetch(`${API_URL}/sos`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patientId: 'PATIENT-001',
+          patientId: patientId, // Send the stored patient ID
           vitals: vitals,
           triggeringUserRole: userRole
         }),
       });
       const data = await response.json();
-      alert(data.message);
+
+      if (response.ok) {
+        // Display the retrieved guardian phone number
+        alert(`SOS ALERT TRIGGERED!\n\n${data.message}\n\nGuardian Contact: ${data.guardian_phone}\nPatient Location: ${data.patient_location}`);
+    } else {
+        alert(`SOS Failed: ${data.message}`);
+    }
       console.log("SOS Response:", data);
+
     } catch (error) {
       console.error("Error triggering SOS:", error);
       alert("Failed to trigger SOS. Check console for details.");
@@ -109,16 +122,19 @@ function App() {
     }
   };
 
-  const handleLoginSuccess = (role, name) => { // ADDED 'name' argument
+  // 2. UPDATED FUNCTION SIGNATURE to accept patient_id
+  const handleLoginSuccess = (role, name, patient_id) => { 
     setIsLoggedIn(true);
     setUserRole(role);
-    setUserName(name); // NEW: Set the user's full name
+    setUserName(name); 
+    // CRITICAL FIX: Ensure patient_id is stored as an integer, not null or undefined
+    setPatientId(patient_id ? parseInt(patient_id) : null); 
     if (role === 'patient') {
       setCurrentView('dashboard');
     } else if (role === 'doctor') {
       setCurrentView('doctor_portal');
     }else if (role === 'nurse') {
-      setCurrentView('nurse_portal'); // Set view to nurse portal
+      setCurrentView('nurse_portal'); 
     }
     setChatbotMessages([]);
   };
@@ -126,7 +142,8 @@ function App() {
   const handleLogout = () => {
     setIsLoggedIn(false);
     setUserRole(null);
-    setUserName(null); // NEW: Clear name on logout
+    setUserName(null); 
+    setPatientId(null); // 3. CLEAR patientId ON LOGOUT
     setCurrentView('dashboard');
     setChatbotMessages([]);
   };
@@ -136,7 +153,7 @@ function App() {
     { id: 'chatbot', label: 'Chatbot', roles: ['patient', 'doctor', 'nurse'] },
     { id: 'womens_health', label: 'Women\'s Health', roles: ['patient'] },
     { id: 'doctor_portal', label: 'Doctor Portal', roles: ['doctor'] },
-    { id: 'nurse_portal', label: 'Nurse Portal', roles: ['nurse'] } // Separate item for nurses
+    { id: 'nurse_portal', label: 'Nurse Portal', roles: ['nurse'] } 
   ];
 
   const visibleNavItems = navItems.filter(item => item.roles.includes(userRole));
@@ -147,7 +164,7 @@ function App() {
     if (!currentNavItem || !currentNavItem.roles.includes(userRole)) {
       return <div className="access-denied">Access Denied: You do not have permission to view this page.</div>;
     }
-    
+    
     switch (currentView) {
       case 'dashboard':
         return <VitalsDashboard vitals={vitals} consultationMessage={consultationMessage} triggerSOS={triggerSOS} userRole={userRole} />;
@@ -156,9 +173,9 @@ function App() {
       case 'womens_health':
         return <WomensHealth vitals={vitals} sendAdvancedInsight={sendAdvancedInsight} />;
       case 'doctor_portal':
-        return <DoctorPortal userRole={userRole} userName={userName} onLogout={handleLogout} />; // PASSED userName
+        return <DoctorPortal userRole={userRole} userName={userName} onLogout={handleLogout} />; 
       case 'nurse_portal':
-        return <NursePortal userRole={userRole} userName={userName} onLogout={handleLogout} />; // PASSED userName
+        return <NursePortal userRole={userRole} userName={userName} onLogout={handleLogout} />; 
       default:
         return null;
     }

@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './DoctorPortal.css';
 import { 
     Users, Bell, ArrowUp, Stethoscope, LogOut, Shield, TrendingUp, Search, 
-    Calendar, CheckCircle, FileText, Heart, Activity, Thermometer, MapPin, MessageCircle // Added MessageCircle for notes
+    Calendar, CheckCircle, FileText, Heart, Activity, Thermometer, MapPin, MessageCircle 
 } from 'lucide-react';
 import DoctorPatientData from './DoctorPatientData';
 
@@ -12,17 +12,21 @@ export default function DoctorPortal({ onLogout, userName }) {
     const [activeTab, setActiveTab] = useState('escalated');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentTime, setCurrentTime] = useState(new Date());
-    const [patients, setPatients] = useState([]); // Will be filled by API
+    const [patients, setPatients] = useState([]);
     const [filteredPatients, setFilteredPatients] = useState([]);
     const [selectedPatientId, setSelectedPatientId] = useState(null);
-
-    // --- NEW STATE FOR MODALS AND ACTIONS ---
+    
+    // --- STATE FOR MODALS AND ACTIONS ---
     const [noteModalOpen, setNoteModalOpen] = useState(false);
     const [currentPatientForNote, setCurrentPatientForNote] = useState(null);
     const [noteContent, setNoteContent] = useState('');
-    const [statusMessage, setStatusMessage] = useState(''); // For user feedback
+    const [statusMessage, setStatusMessage] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [noteSaveSuccess, setNoteSaveSuccess] = useState(false); // NEW: State for success
 
-    // --- NEW: Fetch patient data from the backend ---
+    const noteTextareaRef = useRef(null);
+
+    // --- Data Fetching ---
     const fetchPatients = useCallback(async () => {
         try {
             const response = await fetch(`${API_URL}/patients`);
@@ -30,22 +34,11 @@ export default function DoctorPortal({ onLogout, userName }) {
             
             const data = await response.json();
             
-            // Process data to determine Case Type for frontend filtering
-            const processedData = data.map(p => {
-                let caseType = 'Active';
-                if (p.alertLevel === 'doctor') {
-                    caseType = 'Escalated';
-                } else if (p.hasAlert && p.alertLevel === 'nurse') {
-                    caseType = 'New Case';
-                }
-                
-                return {
-                    ...p,
-                    caseType: caseType,
-                    // Ensure escalatedBy is populated if the case is escalated
-                    escalatedBy: p.alertLevel === 'doctor' ? (p.escalatedBy || 'System Alert') : null 
-                };
-            });
+            const processedData = data.map(p => ({
+                ...p,
+                caseType: p.alertLevel === 'doctor' ? 'Escalated' : (p.hasAlert && p.alertLevel === 'nurse') ? 'New Case' : 'Active',
+                escalatedBy: p.alertLevel === 'doctor' ? (p.escalatedBy || 'System Alert') : null 
+            }));
 
             setPatients(processedData);
         } catch (error) {
@@ -57,7 +50,7 @@ export default function DoctorPortal({ onLogout, userName }) {
     // --- Data Fetching and Clock ---
     useEffect(() => {
         fetchPatients(); 
-        const interval = setInterval(fetchPatients, 15000); // Refresh data every 15s
+        const interval = setInterval(fetchPatients, 15000); 
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
         
         return () => {
@@ -68,7 +61,6 @@ export default function DoctorPortal({ onLogout, userName }) {
 
     // --- Filtering Logic ---
     useEffect(() => {
-        // Clear status message when tab changes
         setStatusMessage(''); 
         
         const searchFiltered = patients.filter(patient =>
@@ -87,6 +79,18 @@ export default function DoctorPortal({ onLogout, userName }) {
 
         setFilteredPatients(tabFiltered);
     }, [searchQuery, activeTab, patients]);
+    
+    // --- Auto-focus effect ---
+    useEffect(() => {
+        if (noteModalOpen) {
+            // Focus the textarea shortly after the modal opens
+            setTimeout(() => {
+                if (noteTextareaRef.current) {
+                    noteTextareaRef.current.focus();
+                }
+            }, 500); // 50ms delay for reliability
+        }
+    }, [noteModalOpen]); 
 
 
     // --- Calculate Stats ---
@@ -102,38 +106,43 @@ export default function DoctorPortal({ onLogout, userName }) {
         { id: 'full_records', label: 'View Full Records', icon: FileText },
     ];
     
-    // --- UPDATED: Acknowledge Case Handler ---
+    // --- HANDLER: Acknowledge Case ---
     const handleAcknowledgeCase = async (patientId) => {
         setStatusMessage(`Acknowledging case for Patient ${patientId}...`);
+        setLoading(true); 
         try {
             const response = await fetch(`${API_URL}/patient/${patientId}/acknowledge`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ doctor_name: userName }), // Pass the real doctor's name
+                body: JSON.stringify({ doctor_name: userName }), 
             });
 
             const data = await response.json();
             if (response.ok) {
                 setStatusMessage(`Success: ${data.message}`);
-                fetchPatients(); // Refresh to update the list
+                fetchPatients(); 
             } else {
                 setStatusMessage(`Error: ${data.message}`);
             }
         } catch (error) {
             console.error("Acknowledge API error:", error);
             setStatusMessage("Network error during acknowledgment.");
+        } finally {
+            setLoading(false); 
         }
     };
 
-    // --- NEW: Open "Add Note" Modal ---
+    // --- HANDLER: Open Add Notes Modal ---
     const handleOpenAddNotes = (patient) => {
         setCurrentPatientForNote(patient);
         setNoteContent('');
-        setStatusMessage(''); // Clear main status message
+        setStatusMessage(''); 
+        setNoteSaveSuccess(false); // Reset success state
         setNoteModalOpen(true);
+        setLoading(false); 
     };
     
-    // --- NEW: Save Note Handler ---
+    // --- HANDLER: Save Note ---
     const handleSaveNote = async (e) => {
         e.preventDefault();
         const patientId = currentPatientForNote.id;
@@ -144,13 +153,14 @@ export default function DoctorPortal({ onLogout, userName }) {
         }
 
         setStatusMessage(`Saving note for ${currentPatientForNote.name}...`);
+        setLoading(true); 
 
         try {
             const response = await fetch(`${API_URL}/patient/${patientId}/add_note`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
-                    doctor_name: userName, // Send real doctor's name
+                    doctor_name: userName, 
                     notes_content: noteContent 
                 }),
             });
@@ -158,25 +168,25 @@ export default function DoctorPortal({ onLogout, userName }) {
             const data = await response.json();
             if (response.ok) {
                 setStatusMessage(`Success: ${data.message}`);
-                // Close modal after a delay
-                setTimeout(() => {
-                    setNoteModalOpen(false);
-                    setStatusMessage(''); // Clear message
-                }, 2000);
+                setNoteContent(''); // Clear the textarea
+                setNoteSaveSuccess(true); // Set success state
             } else {
                 setStatusMessage(`Error: ${data.message}`);
             }
         } catch (error) {
             console.error("Add note API error:", error);
             setStatusMessage("Network error while saving note.");
+        } finally {
+            setLoading(false); 
         }
     };
+
 
     // --- Component: Patient List ---
     const renderPatientList = () => (
         <div className="patient-list-container">
             {/* Status Feedback Bar */}
-            {statusMessage && !noteModalOpen && ( // Only show if modal is closed
+            {statusMessage && !noteModalOpen && ( 
                 <div className={`status-feedback-bar ${statusMessage.startsWith('Error') ? 'error' : 'success'}`}>
                     {statusMessage.replace(/^(Success: |Error: )/, '')}
                 </div>
@@ -229,6 +239,7 @@ export default function DoctorPortal({ onLogout, userName }) {
                                 <button 
                                     onClick={() => handleAcknowledgeCase(patient.id)}
                                     className="button button-acknowledge"
+                                    disabled={loading} 
                                 >
                                     <CheckCircle size={16} /> Acknowledge
                                 </button>
@@ -236,12 +247,14 @@ export default function DoctorPortal({ onLogout, userName }) {
                             <button 
                                 onClick={() => handleOpenAddNotes(patient)}
                                 className="button button-notes"
+                                disabled={loading} 
                             >
                                 <FileText size={16} /> Add Notes
                             </button>
                             <button 
                                 onClick={() => setSelectedPatientId(patient.id)}
                                 className="button button-view-record"
+                                disabled={loading} 
                             >
                                 View Record
                             </button>
@@ -254,18 +267,20 @@ export default function DoctorPortal({ onLogout, userName }) {
     
     // --- Component: Add Notes Modal ---
     const AddNotesModal = () => (
-        <div className="dialog-overlay" onClick={() => setNoteModalOpen(false)}>
+        <div className="dialog-overlay" onClick={() => !loading && setNoteModalOpen(false)}> 
             <div className="dialog-content" onClick={e => e.stopPropagation()}>
                 <h3 className="dialog-title">Add EMR Note for {currentPatientForNote.name}</h3>
                 <form onSubmit={handleSaveNote}>
                     <div className="dialog-body">
                         <textarea 
+                            ref={noteTextareaRef} 
                             className="notes-textarea"
                             placeholder={`Document your findings for ${currentPatientForNote.name} here...`}
                             value={noteContent}
                             onChange={(e) => setNoteContent(e.target.value)}
                             required
                             minLength={10}
+                            disabled={loading || noteSaveSuccess} // Disable if loading OR if save was successful
                         ></textarea>
                         
                         {statusMessage && (
@@ -275,11 +290,19 @@ export default function DoctorPortal({ onLogout, userName }) {
                         )}
 
                         <div className="modal-actions">
-                            <button type="submit" className="button button-primary" disabled={loading}>
-                                {loading ? 'Saving...' : 'Save Note'}
-                            </button>
-                            <button type="button" onClick={() => setNoteModalOpen(false)} className="button button-outline">
-                                Cancel
+                            {/* Only show "Save Note" if it hasn't been saved yet */}
+                            {!noteSaveSuccess && (
+                                <button type="submit" className="button button-primary" disabled={loading}>
+                                    {loading ? 'Saving...' : 'Save Note'}
+                                </button>
+                            )}
+                            <button 
+                                type="button" 
+                                onClick={() => setNoteModalOpen(false)} 
+                                className="button button-outline" 
+                                disabled={loading}
+                            >
+                                {noteSaveSuccess ? 'Close' : 'Cancel'} {/* Change text on success */}
                             </button>
                         </div>
                     </div>

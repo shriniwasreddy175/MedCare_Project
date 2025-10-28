@@ -54,8 +54,8 @@ function LoginPage({ onLoginSuccess }) {
             const data = await response.json();
 
             if (response.ok) {
-                // Pass role and name upon successful login
-                onLoginSuccess(data.role, data.name); 
+                // *** CRITICAL FIX: Pass role, name, AND patient_id ***
+                onLoginSuccess(data.role, data.name, data.patient_id); 
             } else {
                 setMessage(`Error: ${data.message || "Login failed. Check credentials."}`);
             }
@@ -175,7 +175,7 @@ function LoginPage({ onLoginSuccess }) {
                 </div>
                 
                 <div className="form-grid">
-                    {/* CORE USER FIELDS (Username, Password, Name, Email) */}
+                    {/* CORE USER FIELDS */}
                     <div className="form-group">
                         <label>Full Name</label>
                         <input type="text" name="full_name" value={registerData.full_name} onChange={handleRegisterChange} required className="input-field" />
@@ -196,7 +196,6 @@ function LoginPage({ onLoginSuccess }) {
                         <label>Confirm Password</label>
                         <input type="password" name="confirmPassword" value={registerData.confirmPassword} onChange={handleRegisterChange} required className="input-field" />
                     </div>
-                    {/* Placeholder to keep grid aligned */}
                     <div className="form-group">
                         <label>Role</label>
                         <input type="text" value={registerData.role.charAt(0).toUpperCase() + registerData.role.slice(1)} disabled className="input-field disabled-input" />
