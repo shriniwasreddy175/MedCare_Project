@@ -22,7 +22,7 @@ export default function DoctorPortal({ onLogout, userName }) {
     const [noteContent, setNoteContent] = useState('');
     const [statusMessage, setStatusMessage] = useState('');
     const [loading, setLoading] = useState(false);
-    const [noteSaveSuccess, setNoteSaveSuccess] = useState(false); // NEW: State for success
+    const [noteSaveSuccess, setNoteSaveSuccess] = useState(false);
 
     const noteTextareaRef = useRef(null);
 
@@ -34,6 +34,7 @@ export default function DoctorPortal({ onLogout, userName }) {
             
             const data = await response.json();
             
+            // This logic maps the DB alert_level to the UI Case Type
             const processedData = data.map(p => ({
                 ...p,
                 caseType: p.alertLevel === 'doctor' ? 'Escalated' : (p.hasAlert && p.alertLevel === 'nurse') ? 'New Case' : 'Active',
@@ -83,12 +84,11 @@ export default function DoctorPortal({ onLogout, userName }) {
     // --- Auto-focus effect ---
     useEffect(() => {
         if (noteModalOpen) {
-            // Focus the textarea shortly after the modal opens
             setTimeout(() => {
                 if (noteTextareaRef.current) {
                     noteTextareaRef.current.focus();
                 }
-            }, 500); // 50ms delay for reliability
+            }, 50);
         }
     }, [noteModalOpen]); 
 
@@ -106,7 +106,7 @@ export default function DoctorPortal({ onLogout, userName }) {
         { id: 'full_records', label: 'View Full Records', icon: FileText },
     ];
     
-    // --- HANDLER: Acknowledge Case ---
+    // --- UPDATED: Acknowledge Case Handler ---
     const handleAcknowledgeCase = async (patientId) => {
         setStatusMessage(`Acknowledging case for Patient ${patientId}...`);
         setLoading(true); 
@@ -120,7 +120,7 @@ export default function DoctorPortal({ onLogout, userName }) {
             const data = await response.json();
             if (response.ok) {
                 setStatusMessage(`Success: ${data.message}`);
-                fetchPatients(); 
+                fetchPatients(); // Refresh list to move patient to 'active'
             } else {
                 setStatusMessage(`Error: ${data.message}`);
             }
@@ -137,7 +137,7 @@ export default function DoctorPortal({ onLogout, userName }) {
         setCurrentPatientForNote(patient);
         setNoteContent('');
         setStatusMessage(''); 
-        setNoteSaveSuccess(false); // Reset success state
+        setNoteSaveSuccess(false);
         setNoteModalOpen(true);
         setLoading(false); 
     };
@@ -168,8 +168,8 @@ export default function DoctorPortal({ onLogout, userName }) {
             const data = await response.json();
             if (response.ok) {
                 setStatusMessage(`Success: ${data.message}`);
-                setNoteContent(''); // Clear the textarea
-                setNoteSaveSuccess(true); // Set success state
+                setNoteContent(''); 
+                setNoteSaveSuccess(true);
             } else {
                 setStatusMessage(`Error: ${data.message}`);
             }
@@ -181,11 +181,9 @@ export default function DoctorPortal({ onLogout, userName }) {
         }
     };
 
-
     // --- Component: Patient List ---
     const renderPatientList = () => (
         <div className="patient-list-container">
-            {/* Status Feedback Bar */}
             {statusMessage && !noteModalOpen && ( 
                 <div className={`status-feedback-bar ${statusMessage.startsWith('Error') ? 'error' : 'success'}`}>
                     {statusMessage.replace(/^(Success: |Error: )/, '')}
@@ -235,7 +233,8 @@ export default function DoctorPortal({ onLogout, userName }) {
 
                         {/* BOTTOM ROW: Doctor Actions */}
                         <div className="doctor-actions-bar">
-                            {patient.caseType !== 'Active' && (
+                            {/* Show Acknowledge button only for 'nurse' or 'doctor' level alerts */}
+                            {(patient.alertLevel === 'nurse' || patient.alertLevel === 'doctor') && (
                                 <button 
                                     onClick={() => handleAcknowledgeCase(patient.id)}
                                     className="button button-acknowledge"
@@ -280,7 +279,7 @@ export default function DoctorPortal({ onLogout, userName }) {
                             onChange={(e) => setNoteContent(e.target.value)}
                             required
                             minLength={10}
-                            disabled={loading || noteSaveSuccess} // Disable if loading OR if save was successful
+                            disabled={loading || noteSaveSuccess} 
                         ></textarea>
                         
                         {statusMessage && (
@@ -290,7 +289,6 @@ export default function DoctorPortal({ onLogout, userName }) {
                         )}
 
                         <div className="modal-actions">
-                            {/* Only show "Save Note" if it hasn't been saved yet */}
                             {!noteSaveSuccess && (
                                 <button type="submit" className="button button-primary" disabled={loading}>
                                     {loading ? 'Saving...' : 'Save Note'}
@@ -302,7 +300,7 @@ export default function DoctorPortal({ onLogout, userName }) {
                                 className="button button-outline" 
                                 disabled={loading}
                             >
-                                {noteSaveSuccess ? 'Close' : 'Cancel'} {/* Change text on success */}
+                                {noteSaveSuccess ? 'Close' : 'Cancel'} 
                             </button>
                         </div>
                     </div>
@@ -376,7 +374,16 @@ export default function DoctorPortal({ onLogout, userName }) {
             <div className="doctor-main-content">
                 {selectedPatientId ? (
                     // When a patient is selected, show the detailed data view
-                    <DoctorPatientData patientId={selectedPatientId} onBack={() => setSelectedPatientId(null)} />
+                    <DoctorPatientData 
+                        patientId={selectedPatientId} 
+                        onBack={() => {
+                            setSelectedPatientId(null);
+                            fetchPatients(); // Refresh list after closing EMR view
+                        }}
+                        onAcknowledge={handleAcknowledgeCase}
+                        onAddNote={handleOpenAddNotes}
+                        userName={userName}
+                    />
                 ) : (
                     // The main dashboard triage view
                     <>
@@ -423,4 +430,3 @@ export default function DoctorPortal({ onLogout, userName }) {
         </div>
     );
 }
-
