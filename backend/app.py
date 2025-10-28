@@ -611,21 +611,33 @@ def get_patient_details(patient_id):
     recent vitals history for charting, and full consultation history.
     """
     
-    # 1. Fetch the core Patient record
-    patient = Patient.query.get_or_404(patient_id) # Returns 404 if patient ID not found
+    patient = Patient.query.get_or_404(patient_id)
     
-    # 2. Fetch Vitals History (e.g., last 30 records for charts)
     vitals_history_query = VitalsRecord.query.filter_by(patient_id=patient.id).order_by(VitalsRecord.timestamp.desc()).limit(30).all()
     
-    # Format vitals history for easy charting on the frontend
+    # --- CRITICAL FIX: Add explicit check for non-empty string before processing ---
+    def safe_split(value, delimiter):
+        # Returns None if value is None or an empty string, otherwise splits and returns the first part
+        return value.split(delimiter)[0] if value and delimiter in value else value
+
+    def safe_int(value):
+        # Returns None if value is not present or cannot be cast to int
+        return int(value) if value and value.strip() and value.split(' ')[0].isdigit() else None
+
     vitals_history_formatted = {
         "dates": [v.timestamp.strftime("%Y-%m-%d %H:%M") for v in reversed(vitals_history_query)],
-        "heartRate": [int(v.heart_rate.split(' ')[0]) if v.heart_rate and ' ' in v.heart_rate else None for v in reversed(vitals_history_query)],
-        "systolic": [int(v.blood_pressure.split('/')[0]) if v.blood_pressure and '/' in v.blood_pressure else None for v in reversed(vitals_history_query)],
-        "diastolic": [int(v.blood_pressure.split('/')[1].split(' ')[0]) if v.blood_pressure and '/' in v.blood_pressure else None for v in reversed(vitals_history_query)],
+        
+        # FIXED: Robust error handling for Heart Rate and Blood Pressure components
+        "heartRate": [safe_int(safe_split(v.heart_rate, ' ')) for v in reversed(vitals_history_query)],
+        "systolic": [safe_int(safe_split(v.blood_pressure, '/')) for v in reversed(vitals_history_query)],
+        "diastolic": [safe_int(safe_split(safe_split(v.blood_pressure, '/'), ' ')) for v in reversed(vitals_history_query)],
+        
+        # FIXED: Robust error handling for SpO2 and Temperature
         "spo2": [float(v.spo2.split('%')[0]) if v.spo2 and '%' in v.spo2 else None for v in reversed(vitals_history_query)],
         "temperature": [float(v.temperature.split('°')[0]) if v.temperature and '°' in v.temperature else None for v in reversed(vitals_history_query)],
     }
+    
+    # ... (consultations_query and formatting remain the same) ...
     
     # 3. Fetch ALL Consultation History
     consultations_query = Consultation.query.filter_by(patient_id=patient.id).order_by(Consultation.timestamp.desc()).all()
