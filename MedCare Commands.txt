@@ -1,12 +1,16 @@
+C:\MedCare_Project\frontend>
 npm run dev
 
+C:\MedCare_Project\backend>
 set DATABASE_URL=postgresql://medcareproject1563:bUKVDbdpAOtpt6uFtmWpIRnIpFqRRg7m@dpg-d3nvglc9c44c73cduhng-a.singapore-postgres.render.com/medcare_database
 python app.py
 
+C:\MedCare_Project>
 git add .
 git commit -m "Your descriptive message"
 git push origin main
 
+C:\MedCare_Project\backend>
 python -m flask db init
 set DATABASE_URL=postgresql://medcareproject1563:bUKVDbdpAOtpt6uFtmWpIRnIpFqRRg7m@dpg-d3nvglc9c44c73cduhng-a.singapore-postgres.render.com/medcare_database
 python -m flask db migrate -m "Your descriptive message"
