@@ -155,26 +155,27 @@ class VitalsMock:
         self.__dict__.update(entries)
     
 def check_for_alerts(vitals):
-    """Analyzes vital signs and returns a consultation message or alert."""
+    """
+    Analyzes vital signs and returns an alert message AND level.
+    """
     try:
         hr = int(vitals.heart_rate.split(' ')[0])
         bp_systolic = int(vitals.blood_pressure.split('/')[0])
         temp = float(vitals.temperature.split('°')[0])
         spo2 = float(vitals.spo2.split('%')[0])
 
-        if hr > 100 and bp_systolic > 130:
-            return "ALERT: Elevated heart rate and blood pressure detected. It is recommended to contact your doctor immediately."
-        if temp > 37.5:
-            return "WARNING: Body temperature is high. This may indicate a fever. Please monitor your condition."
-        if vitals.ecg_status != "Normal Rhythm":
-            return f"ALERT: Irregular ECG detected. It is recommended to schedule a checkup with your doctor."
-        if spo2 < 95:
-            return "WARNING: Low blood oxygen level detected. Please consult with a professional."
+        # CRITICAL ALERTS
+        if (hr > 120 and bp_systolic > 140) or spo2 < 92:
+            return "ALERT: Critical vitals detected (HR/BP or SpO2). Escalation recommended.", 'doctor'
         
-        return "Your vitals are looking good today. Keep up the good work!"
+        # NURSE-LEVEL ALERTS
+        if (hr > 100 and bp_systolic > 130) or temp > 37.8 or spo2 < 95:
+            return "WARNING: Vitals are outside normal range. Please review.", 'nurse'
+        
+        return "Your vitals are looking good today. Keep up the good work!", 'none'
 
     except (ValueError, IndexError, AttributeError):
-        return "Your vitals are looking good today. Keep up the good work!"
+        return "Vitals data format error. System operational.", 'none'
 
 # --- API Endpoints ---
 
@@ -440,7 +441,7 @@ def get_womens_health_insight():
 @app.route('/api/vitals/manual', methods=['POST'])
 def manual_vitals_entry():
     """
-    Receives manual vital sign data from the Nurse Portal and saves it to the VitalsRecord table.
+    UPDATED: Saves manual vitals AND creates a state-aware Consultation alert.
     """
     data = request.json
     
@@ -453,7 +454,7 @@ def manual_vitals_entry():
 
     patient = Patient.query.filter_by(name=patient_name).first()
     if not patient:
-        return jsonify({"message": f"Patient '{patient_name}' not found in the database. Cannot save record."}), 404
+        return jsonify({"message": f"Patient '{patient_name}' not found in the database."}), 404
 
     # Prepare data for alert check
     vitals_data_for_check = {
@@ -465,7 +466,8 @@ def manual_vitals_entry():
     }
     
     vitals_obj = VitalsMock(**vitals_data_for_check)
-    alert_message = check_for_alerts(vitals_obj)
+    # Get both the message AND the alert_level
+    alert_message, alert_level = check_for_alerts(vitals_obj) 
 
     try:
         new_vitals = VitalsRecord(
@@ -475,28 +477,24 @@ def manual_vitals_entry():
             spo2=vitals_data_for_check['spo2'],
             temperature=vitals_data_for_check['temperature'],
             ecg_status=vitals_data_for_check['ecg_status'],
-            cortisol=data.get('cortisol', "N/A"), 
-            estrogen=data.get('estrogen', "N/A"),
-            progesterone=data.get('progesterone', "N/A"),
-            testosterone=data.get('testosterone', "N/A"),
         )
         db.session.add(new_vitals)
         
-        # Log a consultation entry for the record, including any notes or alerts
-        if notes or "ALERT" in alert_message or "WARNING" in alert_message:
+        # Log a consultation entry with the correct alert_level
+        if notes or alert_level != 'none':
             consultation_note = Consultation(
                 patient_id=patient.id,
                 doctor_name=nurse_name, 
-                notes=f"MANUAL VITAL ENTRY by {nurse_name}: {new_vitals.heart_rate}, {new_vitals.blood_pressure}, etc. OBSERVATION: {notes or 'None'}. SYSTEM STATUS: {alert_message}",
-                alert_level='nurse' if "ALERT" in alert_message else 'none',
-                escalated_by=nurse_name
+                notes=f"MANUAL VITAL ENTRY by {nurse_name}. OBSERVATION: {notes or 'None'}. SYSTEM STATUS: {alert_message}",
+                alert_level=alert_level, # Use the dynamic alert_level
+                escalated_by=nurse_name if alert_level != 'none' else None
             )
             db.session.add(consultation_note)
             
         db.session.commit()
         return jsonify({
             "message": f"Vitals saved successfully for {patient_name}. System analysis: {alert_message}",
-            "alert": "ALERT" in alert_message or "WARNING" in alert_message
+            "alert": alert_level != 'none'
         }), 201
 
     except Exception as e:
@@ -553,30 +551,33 @@ def live_vitals_ingestion():
 @app.route('/api/patients', methods=['GET'])
 def get_patients():
     """
-    Returns the list of patients under care by querying the database, using the LATEST 
-    VitalsRecord entry for status and display.
+    UPDATED: Returns the patient list, using the Consultation table 
+    to determine the *true* alert status (not just vitals).
     """
     patient_query = Patient.query.all()
     patient_list = []
     
     for patient in patient_query:
         latest_vitals = VitalsRecord.query.filter_by(patient_id=patient.id).order_by(VitalsRecord.timestamp.desc()).first()
+        
+        # --- NEW ALERT LOGIC ---
+        # Find the most recent UNRESOLVED alert for this patient
+        active_alert = Consultation.query.filter(
+            Consultation.patient_id == patient.id,
+            Consultation.alert_level.in_(['nurse', 'doctor'])
+        ).order_by(Consultation.timestamp.desc()).first()
 
         is_alert = False
         alert_level = 'none'
+        escalated_by = None
         
+        if active_alert:
+            is_alert = True
+            alert_level = active_alert.alert_level
+            escalated_by = active_alert.escalated_by
+        # --- END NEW LOGIC ---
+
         if latest_vitals:
-            vitals_obj = VitalsMock(
-                heart_rate=latest_vitals.heart_rate,
-                blood_pressure=latest_vitals.blood_pressure,
-                spo2=latest_vitals.spo2,
-                temperature=latest_vitals.temperature,
-                ecg_status=latest_vitals.ecg_status or "Normal Rhythm"
-            )
-            alert_msg = check_for_alerts(vitals_obj)
-            is_alert = "ALERT" in alert_msg or "WARNING" in alert_msg
-            alert_level = 'nurse' if is_alert else 'none'
-            
             patient_vitals_output = {
                 "heartRate": latest_vitals.heart_rate,
                 "bloodPressure": latest_vitals.blood_pressure,
@@ -595,8 +596,9 @@ def get_patients():
             "gender": patient.gender or "N/A",
             "location": patient.location,
             "hasAlert": is_alert, 
-            "alertLevel": alert_level,
+            "alertLevel": alert_level, # Now accurately 'nurse' or 'doctor'
             "alertTime": alert_time,
+            "escalatedBy": escalated_by, # NEW: Pass escalation source
             "isPregnant": patient.is_pregnant,
             "vitals": patient_vitals_output 
         }
@@ -668,11 +670,51 @@ def get_patient_details(patient_id):
     
     return jsonify(response_data)
 
+@app.route('/api/patient/<int:patient_id>/escalate', methods=['POST'])
+def escalate_case(patient_id):
+    """
+    Allows a nurse to escalate a 'nurse' level alert to a 'doctor' level alert.
+    Requires: 'nurse_name' in JSON payload.
+    """
+    data = request.json
+    nurse_name = data.get('nurse_name', 'Unknown Nurse')
+    
+    patient = Patient.query.get(patient_id)
+    if not patient:
+        return jsonify({"message": "Patient not found."}), 404
+
+    # Find the most recent 'nurse' level alert to escalate
+    alert_to_escalate = Consultation.query.filter(
+        Consultation.patient_id == patient_id,
+        Consultation.alert_level == 'nurse'
+    ).order_by(Consultation.timestamp.desc()).first()
+
+    if not alert_to_escalate:
+        return jsonify({"message": "No active 'nurse' level alert found to escalate."}), 404
+        
+    try:
+        # Update the alert status
+        alert_to_escalate.alert_level = 'doctor'
+        alert_to_escalate.escalated_by = nurse_name
+        alert_to_escalate.notes = (alert_to_escalate.notes or "") + \
+            f" | ESCALATED TO DOCTOR by {nurse_name}."
+            
+        db.session.commit()
+        return jsonify({
+            "message": f"Case for {patient.name} escalated to Doctor.",
+            "patient_id": patient_id
+        }), 200
+
+    except Exception as e:
+        db.session.rollback()
+        print(f"Database error during escalation: {e}")
+        return jsonify({"message": "Failed to escalate case due to server error."}), 500
+
+
 @app.route('/api/patient/<int:patient_id>/acknowledge', methods=['POST'])
 def acknowledge_case(patient_id):
     """
-    Formally acknowledges a case, clears its urgent alert status in the latest vitals,
-    and creates a confirmation note in Consultation history.
+    UPDATED: Formally acknowledges and RESOLVES all active alerts for a patient.
     Requires: 'doctor_name' in JSON payload.
     """
     data = request.json
@@ -682,21 +724,24 @@ def acknowledge_case(patient_id):
     if not patient:
         return jsonify({"message": "Patient not found."}), 404
 
+    # Find ALL active alerts ('nurse' or 'doctor') and resolve them
+    active_alerts = Consultation.query.filter(
+        Consultation.patient_id == patient_id,
+        Consultation.alert_level.in_(['nurse', 'doctor'])
+    ).all()
+
+    if not active_alerts:
+        return jsonify({"message": "No active alerts found for this patient."}), 404
+
     try:
-        # 1. Log the acknowledgment in Consultation history
-        db.session.add(Consultation(
-            patient_id=patient_id,
-            doctor_name=doctor_name,
-            notes=f"CASE ACKNOWLEDGED. Review initiated by {doctor_name}. Alert status cleared from triage view.",
-            alert_level='none',
-            escalated_by='System Triage'
-        ))
-        
-        # 2. OPTIONAL: You may want to update the *latest* VitalsRecord to clear the alert flags
+        for alert in active_alerts:
+            alert.alert_level = 'resolved' # This is the "Stable" status
+            alert.notes = (alert.notes or "") + \
+                f" | CASE ACKNOWLEDGED AND RESOLVED by {doctor_name}."
         
         db.session.commit()
         return jsonify({
-            "message": f"Case acknowledged by {doctor_name}. Triage status updated.",
+            "message": f"Case acknowledged and resolved by {doctor_name}. Triage status updated.",
             "patient_id": patient_id
         }), 200
 
