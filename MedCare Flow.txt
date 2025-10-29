@@ -1,7 +1,7 @@
  IoT Devices (ESP32, sensors)
         |
         v
-   Backend API (Flask)
+   Backend API (Flask) /api/vitals/live
    ----------------------------------
    Deployed on: Render
    URL: https://medcare-api-i5cm.onrender.com
@@ -16,4 +16,4 @@
    URL: https://medcare-frontend-2z67.onrender.com
         |
         v
-   Users (Patient, Doctor, Nurse, Admin) + Chatbot (Gemini API)
+   Users (Patient, Doctor and Nurse) + Chatbot (Gemini API)
