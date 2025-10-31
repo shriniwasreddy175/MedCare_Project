@@ -74,3 +74,4 @@ python-dotenv
 google-generativeai
 gunicorn  # Essential production WSGI server
 psycopg2-binary  # CRITICAL: Python adapter for PostgreSQL
+twilio
