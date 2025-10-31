@@ -14,11 +14,10 @@ export default function NursePortal({ onLogout, userName }) {
     const [manualEntryOpen, setManualEntryOpen] = useState(false);
     const [guidelinesOpen, setGuidelinesOpen] = useState(false);
     const [patients, setPatients] = useState([]);
-    // Note: alertPatients is now derived, not state
     const [filteredPatients, setFilteredPatients] = useState([]);
     const [selectedPatientId, setSelectedPatientId] = useState(null);
     const [statusMessage, setStatusMessage] = useState(''); // For user feedback
-    const [loading, setLoading] = useState(false); // <<< FIX 1: ADDED MISSING LOADING STATE
+    const [loading, setLoading] = useState(false); 
 
     // Form state for manual entry
     const [manualFormData, setManualFormData] = useState({
@@ -33,7 +32,6 @@ export default function NursePortal({ onLogout, userName }) {
             if (!response.ok) throw new Error('Failed to fetch patients');
             const data = await response.json();
             
-            // Process data for case types (aligns logic with DoctorPortal)
             const processedData = data.map(p => ({
                 ...p,
                 caseType: p.alertLevel === 'doctor' ? 'Escalated' : (p.hasAlert && p.alertLevel === 'nurse') ? 'New Alert' : 'Active',
@@ -52,7 +50,7 @@ export default function NursePortal({ onLogout, userName }) {
     useEffect(() => {
         fetchPatients();
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        const patientRefreshInterval = setInterval(fetchPatients, 15000); // Refresh list
+        const patientRefreshInterval = setInterval(fetchPatients, 15000); // Refresh list every 15s
         return () => {
             clearInterval(timer);
             clearInterval(patientRefreshInterval);
@@ -92,7 +90,6 @@ export default function NursePortal({ onLogout, userName }) {
         "Fever >38°C: Cooling measures, blood tests, infection protocol"
     ];
 
-    // --- HANDLER: Escalate to Doctor ---
     const handleEscalateToDoctor = async (patient) => {
         setStatusMessage(`Escalating case for ${patient.name}...`);
         setLoading(true);
@@ -100,13 +97,13 @@ export default function NursePortal({ onLogout, userName }) {
             const response = await fetch(`${API_URL}/patient/${patient.id}/escalate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ nurse_name: userName }), // Pass the real nurse's name
+                body: JSON.stringify({ nurse_name: userName }), 
             });
 
             const data = await response.json();
             if (response.ok) {
                 setStatusMessage(`Success: ${data.message}`);
-                fetchPatients(); // Refresh list to move patient to 'escalated'
+                fetchPatients(); 
             } else {
                 setStatusMessage(`Error: ${data.message}`);
             }
@@ -122,11 +119,40 @@ export default function NursePortal({ onLogout, userName }) {
         setSelectedPatientId(selectedPatientId === patientId ? null : patientId);
     };
 
+    // --- NEW: Function to open Google Maps ---
+    const handleFindNearbyHospitals = () => {
+        setStatusMessage("Getting your location to find nearby hospitals...");
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // Success: User allowed location
+                    const { latitude, longitude } = position.coords;
+                    const url = `https://www.google.com/maps/search/hospitals/@${latitude},${longitude},14z`;
+                    window.open(url, '_blank', 'noopener,noreferrer');
+                    setStatusMessage(''); // Clear status
+                },
+                (error) => {
+                    // Error: User blocked location or API failed
+                    console.error("Error getting location: ", error.message);
+                    setStatusMessage("Could not get your location. Opening a default map search for 'Hospitals in Mumbai'.");
+                    // Fallback to a generic search (Mumbai)
+                    const fallbackUrl = "https://www.google.com/maps/search/hospitals+in+mumbai";
+                    window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+                }
+            );
+        } else {
+            // Error: Browser doesn't support Geolocation
+            setStatusMessage("Geolocation is not supported by your browser. Opening default map search.");
+            const fallbackUrl = "https://www.google.com/maps/search/hospitals+in+mumbai";
+            window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     const sidebar = [
         { id: 'patients', label: 'My Patients', icon: Users, count: totalPatients },
         { id: 'alerts', label: 'Active Alerts', icon: Bell, badge: criticalAlerts, color: 'text-red-600' },
         { id: 'escalated', label: 'Escalated', icon: ArrowUp, badge: escalatedAlerts, color: 'text-orange-600' },
-        { id: 'directory', label: 'Hospitals', icon: MapPin },
+        { id: 'directory', label: 'Hospitals', icon: MapPin, action: handleFindNearbyHospitals }, // UPDATED
     ];
 
     const handleFormChange = (e) => {
@@ -134,15 +160,14 @@ export default function NursePortal({ onLogout, userName }) {
         setManualFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    // --- HANDLER: Save Manual Entry ---
     const handleSaveEntry = async (e) => {
         e.preventDefault();
         setEntryStatus('Saving data...');
-        setLoading(true); // <<< FIX 2: SET LOADING TRUE
+        setLoading(true); 
 
         if (!manualFormData.patient_name || !manualFormData.heart_rate) {
             setEntryStatus('Error: Patient Name and Heart Rate are required.');
-            setLoading(false); // Reset loading on validation fail
+            setLoading(false); 
             return;
         }
 
@@ -160,6 +185,7 @@ export default function NursePortal({ onLogout, userName }) {
             
             if (!response.ok) {
                 setEntryStatus(`Error: ${data.message || 'Failed to save data.'}`);
+                setLoading(false);
                 return;
             }
 
@@ -178,7 +204,7 @@ export default function NursePortal({ onLogout, userName }) {
             console.error("Manual entry submit error:", error);
             setEntryStatus('Network error: Could not reach the API server.');
         } finally {
-            setLoading(false); // <<< FIX 3: RESET LOADING ON COMPLETE/FAIL
+            setLoading(false); 
         }
     };
 
@@ -209,12 +235,14 @@ export default function NursePortal({ onLogout, userName }) {
                     <Phone className="icon-xs" />
                     Call Patient
                 </button>
-                {/* Show Escalate button only for 'nurse' level alerts */}
                 {patient.caseType === 'New Alert' && (
                     <button
-                        onClick={() => handleEscalateToDoctor(patient)}
+                        onClick={(e) => {
+                            e.stopPropagation(); 
+                            handleEscalateToDoctor(patient);
+                        }}
                         className="button button-orange"
-                        disabled={loading} // <<< FIX 4: DISABLE BUTTONS WHILE LOADING
+                        disabled={loading} 
                     >
                         <ArrowUp className="icon-xs" />
                         Escalate to Doctor
@@ -246,7 +274,12 @@ export default function NursePortal({ onLogout, userName }) {
                             <button
                                 key={item.id}
                                 onClick={() => {
-                                    if (item.id === 'directory') { alert('Navigating to Hospital Directory...'); } else { setActiveTab(item.id); }
+                                    // UPDATED: Check for specific action or set tab
+                                    if (item.action) {
+                                        item.action();
+                                    } else {
+                                        setActiveTab(item.id);
+                                    }
                                 }}
                                 className={`nurse-nav-item ${activeTab === item.id ? 'active' : ''}`}
                             >
@@ -341,7 +374,7 @@ export default function NursePortal({ onLogout, userName }) {
 
             {/* Manual Entry Dialog */}
             {manualEntryOpen && (
-                <div className="dialog-overlay" onClick={() => setManualEntryOpen(false)}>
+                <div className="dialog-overlay" onClick={() => !loading && setManualEntryOpen(false)}>
                     <form className="dialog-content" onSubmit={handleSaveEntry} onClick={e => e.stopPropagation()}>
                         <div className="dialog-header">
                             <h3 className="dialog-title">Manual Vitals Entry</h3>
@@ -366,7 +399,7 @@ export default function NursePortal({ onLogout, userName }) {
                                 <div>
                                     <label className="input-label">SpO2 (%)</label>
                                     <input className="input-field" placeholder="98%" name="spo2" value={manualFormData.spo2} onChange={handleFormChange} disabled={loading} />
-                                </div>
+                                G</div>
                                 <div>
                                     <label className="input-label">Temperature (°C)</label>
                                     <input className="input-field" placeholder="36.5°C" name="temperature" value={manualFormData.temperature} onChange={handleFormChange} disabled={loading} />
@@ -380,7 +413,6 @@ export default function NursePortal({ onLogout, userName }) {
                                 <button type="submit" className="button button-primary" disabled={loading}>
                                     {loading ? 'Saving...' : 'Save Entry'}
                                 </button>
-                                {/* FIX 5: Corrected typo 'type_button' to 'type="button"' */}
                                 <button type="button" onClick={() => setManualEntryOpen(false)} className="button button-outline" disabled={loading}>
                                     Cancel
                                 </button>
@@ -412,3 +444,4 @@ export default function NursePortal({ onLogout, userName }) {
         </div>
     );
 }
+
