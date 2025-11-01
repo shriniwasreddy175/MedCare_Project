@@ -151,41 +151,66 @@ function WomensHealth({ vitals, sendAdvancedInsight }) {
   };
 
   // --- Monthly Symptom Breakdown for Pie Chart ---
-  const getMonthlySymptomData = () => {
-    if (!lastPeriodDate || symptomHistory.length === 0) return { labels: [], datasets: [] };
-    
-    const startOfCycle = new Date(lastPeriodDate);
-    const symptomsInCurrentCycle = symptomHistory.filter(entry => {
-      const entryDate = new Date(entry.date);
-      return entryDate >= startOfCycle && entryDate <= today;
-    });
+  const getMonthlySymptomData = () => {
+    // Case 1: No period date set or no symptoms logged at all
+    if (!lastPeriodDate || symptomHistory.length === 0) {
+        return {
+            labels: ['No Symptoms Logged Yet'],
+            datasets: [{
+                data: [1],
+                backgroundColor: ['#E0E0E0'], // Default gray
+                borderWidth: 0
+            }]
+        };
+    }
+    
+    const startOfCycle = new Date(lastPeriodDate);
+    const symptomsInCurrentCycle = symptomHistory.filter(entry => {
+      const entryDate = new Date(entry.date);
+      return entryDate >= startOfCycle && entryDate <= today;
+    });
 
-    const symptomCounts = symptomsInCurrentCycle.reduce((acc, entry) => {
-      const symptom = entry.symptom.toLowerCase().trim();
-      acc[symptom] = (acc[symptom] || 0) + 1;
-      return acc;
-    }, {});
+    const symptomCounts = symptomsInCurrentCycle.reduce((acc, entry) => {
+      const symptom = entry.symptom.toLowerCase().trim();
+      acc[symptom] = (acc[symptom] || 0) + 1;
+      return acc;
+    }, {});
 
-    const labels = Object.keys(symptomCounts);
-    const data = Object.values(symptomCounts);
-    
-    // Generate distinct colors for each symptom
-    const colors = labels.map((_, index) => {
-      const hue = (index * 137.508) % 360; // Use a golden angle approximation
-      return `hsl(${hue}, 70%, 50%)`;
-    });
+    // Case 2: Symptoms exist, but none in the current cycle
+    if (Object.keys(symptomCounts).length === 0) {
+        return {
+            labels: ['No Symptoms Logged This Cycle'],
+            datasets: [{
+                data: [1],
+                backgroundColor: ['#E0E0E0'],
+                borderWidth: 0
+            }]
+        };
+    }
 
-    return {
-      labels: labels,
-      datasets: [
-        {
-          data: data,
-          backgroundColor: colors,
-          hoverOffset: 4,
-        },
-      ],
-    };
-  };
+    const labels = Object.keys(symptomCounts);
+    const data = Object.values(symptomCounts);
+    
+    // Generate distinct colors for each symptom
+    const colors = labels.map((_, index) => {
+      const hue = (index * 137.508) % 360; // Use a golden angle approximation
+      return `hsl(${hue}, 70%, 60%)`;
+    });
+
+    return {
+      labels: labels,
+      datasets: [
+        {
+            label: 'Symptom Count',
+            data: data,
+            backgroundColor: colors,
+            borderColor: '#ffffff',
+            borderWidth: 2,
+            hoverOffset: 4,
+        },
+      ],
+    };
+  };
 
   const monthlySymptomData = getMonthlySymptomData();
   const firstDay = lastPeriodDate ? new Date(lastPeriodDate).toDateString() : 'N/A';
