@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import LandingPage from './LandingPage';
 import LoginPage from './LoginPage';
 import Chatbot from './components/Chatbot';
 import VitalsDashboard from './components/VitalsDashboard';
@@ -9,6 +10,7 @@ import './App.css'; // Global Styles
 
 function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [authView, setAuthView] = useState('landing');
   const [userRole, setUserRole] = useState(null);
   const [userName, setUserName] = useState(null); 
   const [patientId, setPatientId] = useState(null); // 1. ADD STATE FOR PATIENT ID
@@ -125,6 +127,7 @@ function App() {
   // 2. UPDATED FUNCTION SIGNATURE to accept patient_id
   const handleLoginSuccess = (role, name, patient_id) => { 
     setIsLoggedIn(true);
+    setAuthView('landing');
     setUserRole(role);
     setUserName(name); 
     // CRITICAL FIX: Ensure patient_id is stored as an integer, not null or undefined
@@ -141,6 +144,7 @@ function App() {
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setAuthView('landing');
     setUserRole(null);
     setUserName(null); 
     setPatientId(null); // 3. CLEAR patientId ON LOGOUT
@@ -181,7 +185,26 @@ function App() {
     }
   };
 
-  return isLoggedIn ? (
+  if (!isLoggedIn) {
+    if (authView === 'landing') {
+      return (
+        <LandingPage
+          onLogin={() => setAuthView('login')}
+          onSignup={() => setAuthView('signup')}
+        />
+      );
+    }
+
+    return (
+      <LoginPage
+        onLoginSuccess={handleLoginSuccess}
+        mode={authView}
+        onBackToLanding={() => setAuthView('landing')}
+      />
+    );
+  }
+
+  return isLoggedIn ? (
     <div className="app-container">
       <header className="app-header">
         <h1 className="app-title">MedCare</h1>
@@ -208,9 +231,7 @@ function App() {
         <p>&copy; 2025 MedCare. All rights reserved.</p>
       </footer>
     </div>
-  ) : (
-    <LoginPage onLoginSuccess={handleLoginSuccess} />
-  );
+  ) : null;
 }
 
 export default App;

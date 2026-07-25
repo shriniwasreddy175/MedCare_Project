@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import './LoginPage.css';
 
 const API_URL = 'https://medcare-api-i5cm.onrender.com/api'; 
 
-function LoginPage({ onLoginSuccess }) {
+function LoginPage({ onLoginSuccess, mode = 'login', onBackToLanding }) {
     const [message, setMessage] = useState('');
     const [loading, setLoading] = useState(false);
     const [isRegistering, setIsRegistering] = useState(false);
+
+    useEffect(() => {
+        setIsRegistering(mode === 'signup' || mode === 'register');
+        setMessage('');
+    }, [mode]);
     
     // State for Login Form
     const [loginData, setLoginData] = useState({
@@ -155,8 +160,13 @@ function LoginPage({ onLoginSuccess }) {
                 </button>
             </form>
             <p className="form-footer">
-                Don't have an account? <a href="#" onClick={() => { setIsRegistering(true); setMessage(''); }}>Register</a>
+                Don't have an account? <button type="button" className="link-button" onClick={() => { setIsRegistering(true); setMessage(''); }}>Register</button>
             </p>
+            {onBackToLanding && (
+                <button type="button" className="back-button" onClick={onBackToLanding}>
+                    Back to overview
+                </button>
+            )}
         </div>
     );
 
@@ -237,8 +247,13 @@ function LoginPage({ onLoginSuccess }) {
                 </button>
             </form>
             <p className="form-footer">
-                Already have an account? <a href="#" onClick={() => { setIsRegistering(false); setMessage(''); }}>Login</a>
+                Already have an account? <button type="button" className="link-button" onClick={() => { setIsRegistering(false); setMessage(''); }}>Login</button>
             </p>
+            {onBackToLanding && (
+                <button type="button" className="back-button" onClick={onBackToLanding}>
+                    Back to overview
+                </button>
+            )}
         </div>
     );
 
